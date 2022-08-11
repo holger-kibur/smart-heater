@@ -91,4 +91,4 @@ def do_fetch(prog_config):
         rem_minutes -= 60
 
     # Upload schedule to crontab
-    sched_builder.upload()
+    sched_builder.upload(prog_config)

@@ -44,16 +44,20 @@ class AtCmdWrapper():
             systime.minute)
 
     @classmethod
-    def upload_command(cls, event_type, event_time):
+    def upload_command(cls, prog_config, event_type, event_time):
         """
         Transform an on/off command into an "at" command to run the
         turn_on/turn_off scripts, and upload the command to the "at" daemon.
         """
 
-        if event_type == ScheduleBuilder.ON_EVENT:
-            cmd_prefix = f"echo \"python {os.getcwd()}/turn_on.py\""
-        else:
-            cmd_prefix = f"echo \"python {os.getcwd()}/turn_off.py\""
+        # This would be exceedingly ugly with f-string
+        # pylint: disable=consider-using-f-string
+        cmd_prefix = "echo \"python {}/switch.py -c {} -a {}\"".format(
+            os.getcwd(),
+            prog_config.source_file,
+            'ON' if event_type == ScheduleBuilder.ON_EVENT else 'OFF',
+        )
+
         event_cmd = f"{cmd_prefix} | {cls.datetime_to_at(event_time)}"
         logger.debug("upload command: %s", event_cmd)
         if cls.test_hook_cmd is None:
@@ -148,7 +152,7 @@ class ScheduleBuilder():
                         )
         logger.info("-" * 69)
 
-    def upload(self) :
+    def upload(self, prog_config):
         """
         Upload the current schedule to the system "at" daemon to be ran.
 
@@ -173,4 +177,4 @@ class ScheduleBuilder():
 
         for (event_type, event_time) in self.sched:
             AtCmdWrapper.upload_command(
-                event_type, util.market_time_to_utc(event_time))
+                prog_config, event_type, util.market_time_to_utc(event_time))
