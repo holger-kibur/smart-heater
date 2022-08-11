@@ -30,12 +30,13 @@ if __name__ == "__main__":
             logfile=prog_config['logging']['switch_logfile'],
             debug=False)
 
-    out_pin = prog_config['pins']['pin']
-    pin_state = GPIO.HIGH if args.action == 'ON' else GPIO.LOW
+    out_pin = prog_config['hardware']['switch_pin']
+    pin_state = GPIO.HIGH if args.action[0] == 'ON' else GPIO.LOW
+
     if prog_config['hardware']['reverse_polarity']:
         # Reverse the pin state
         pin_state = GPIO.LOW if pin_state == GPIO.HIGH else GPIO.HIGH
-
+    
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(0)
     GPIO.setup(out_pin, GPIO.OUT)
