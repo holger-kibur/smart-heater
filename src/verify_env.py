@@ -10,7 +10,7 @@ import os
 import shutil
 
 
-def verify_environment(): 
+def verify_environment():
     """
     Verify that the system the script is running on is supported.
 

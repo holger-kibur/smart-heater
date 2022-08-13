@@ -40,7 +40,7 @@ if __name__ == "__main__":
     if prog_config['hardware']['reverse_polarity']:
         # Reverse the pin state
         pin_state = GPIO.LOW if pin_state == GPIO.HIGH else GPIO.HIGH
-    
+
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(0)
     GPIO.setup(out_pin, GPIO.OUT)
