@@ -49,6 +49,10 @@ class ProgramConfig():
 
     @classmethod
     def check_config(cls, req_subtree, config_subtree):
+        """
+        Make sure that a loaded configuration contains all the required config
+        items.
+        """
         if isinstance(req_subtree, list):
             for key in req_subtree:
                 if key not in config_subtree.keys():
@@ -62,6 +66,9 @@ class ProgramConfig():
 
     @classmethod
     def from_file(cls, filepath):
+        """
+        Load a configuration from a file and check it using check_config.
+        """
         try:
             from_file: dict = toml.load(filepath)
         except FileNotFoundError:
@@ -80,4 +87,7 @@ class ProgramConfig():
         return self.config_tree.__getitem__(items)
 
     def get_heating_minutes(self, date):
+        """
+        Get configured heating minutes for the weekday of the passed datetime.
+        """
         return list(self["heating-schedule"].values())[date.weekday()]

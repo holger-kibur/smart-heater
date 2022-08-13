@@ -1,3 +1,7 @@
+"""
+Command line entry point for switching program.
+"""
+
 import argparse
 import importlib
 

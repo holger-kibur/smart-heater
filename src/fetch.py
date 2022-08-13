@@ -1,3 +1,12 @@
+"""
+Contains main logic for the fetch script.
+
+Functions:
+    fetch_info
+    parse_hourly_prices
+    parse_day_average
+"""
+
 from datetime import datetime
 import json
 import requests
@@ -7,6 +16,9 @@ from . import log, schedule as cron, util
 logger = log.LoggerFactory.get_logger("FETCH")
 
 def fetch_info(req_url) -> dict:
+    """
+    Fetch market info from url.
+    """
     price_req = requests.get(req_url)
     if price_req.status_code != 200:
         util.exit_critical(
