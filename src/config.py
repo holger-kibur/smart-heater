@@ -25,6 +25,10 @@ CONFIG_REQ_KEYS = {
         'url',
         'country_code',
     ],
+    'environment': [
+        'python',
+        'at_queue',
+    ],
     'hardware': [
         'switch_pin',
         'reverse_polarity',

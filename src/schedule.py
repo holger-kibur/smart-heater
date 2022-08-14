@@ -36,7 +36,7 @@ class AtCmdWrapper():
         # Disable linter warning because making this an f-string would make the
         # line unbearably long.
         # pylint: disable=consider-using-f-string
-        return "at -t {:0>4}{:0>2}{:0>2}{:0>2}{:0>2}".format(
+        return "{:0>4}{:0>2}{:0>2}{:0>2}{:0>2}".format(
             systime.year,
             systime.month,
             systime.day,
@@ -51,14 +51,17 @@ class AtCmdWrapper():
         """
 
         # This would be exceedingly ugly with f-string
+        
         # pylint: disable=consider-using-f-string
-        cmd_prefix = "echo \"python {}/switch.py -c {} -a {}\"".format(
+        event_cmd = "echo \"{} {}/switch.py -c {} -a {}\"".format(
+            prog_config['environment']['python'],
             os.getcwd(),
             prog_config.source_file,
             'ON' if event_type == ScheduleBuilder.ON_EVENT else 'OFF',
         )
-
-        event_cmd = f"{cmd_prefix} | {cls.datetime_to_at(event_time)}"
+        event_cmd += f" | at -q {prog_config['environment']['at_queue']}"
+        event_cmd += f" -t {cls.datetime_to_at(event_time)}"
+        
         logger.debug("upload command: %s", event_cmd)
         if cls.test_hook_cmd is None:
             subprocess.call(event_cmd, shell=True)

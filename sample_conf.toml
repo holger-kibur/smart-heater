@@ -1,0 +1,52 @@
+[heating-schedule]
+# Total desired heating minutes for each day.
+# IMPORTANT: Currently, these days go by OSLO's local timezone (CET
+# or CEST, depending on season). This means that a heating day
+# doesn't start at 00:00 for all timezones. For example, in Estonia,
+# "Monday" is considered as from Monday, 01:00 to Tuesday, 01:00.
+monday = 60
+tuesday = 60
+wednesday = 60
+thursday = 60
+friday = 60
+saturday = 60
+sunday = 60
+
+[fetch]
+# URL to the API where market data is retrieved.
+url = "ADD MARKET API URL HERE"
+
+# Standard two letter country code for where the heater is located.
+# Only the country codes visible on the Nordpool market page are
+# supported.
+country_code = "EE"
+
+[hardware]
+# GPIO pin that relay is attached to. This is the pin that will
+# be toggled.
+switch_pin = 0
+
+# Whether or not to reverse the pin toggle logic.
+# Normally, OFF means the pin is at logical low, and ON means logical
+# high. However, depending on the relay circuit OFF might have to be
+# logical high etc. For the latter case, set this to true.
+reverse_polarity = false
+
+[environment]
+# Python command/path-to-executable to use for running commands.
+# Python versions >= 3.7 work. Earlier python 3 versions might work
+# (I haven't checked). Python 2 is not supported.
+python = 'python3'
+
+# Which 'at' command queue to schedule commands in. Unless you are
+# using 'at' to schedule other stuff on your system, this can be left
+# as 'a'.
+at_queue = 'a'
+
+[logging]
+# filepath for where to store logs from the fetch script.
+fetch_logfile = 'fetch.log'
+
+# Filepath for where to store logs from the switch script.
+switch_logfile = 'switch.log'
+

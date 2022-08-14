@@ -17,6 +17,7 @@ class LoggerFactory():
     verbose = False
     logfile = None
     debug = False
+    testing = False
 
     @classmethod
     def configure_logger(cls, verbose, logfile, debug):
@@ -37,6 +38,17 @@ class LoggerFactory():
         cls.debug = debug
 
     @classmethod
+    def configure_test_logger(cls):
+        """
+        Configure the LoggerFactory for testing.
+
+        All future logger instances will print nothing to files.
+        """
+        
+        cls.logfile = 'TEST_LOGFILE'
+        cls.testing = True
+
+    @classmethod
     def get_logger(cls, prefix):
         """
         Return a logger instance that will log using the specified prefix.
@@ -51,6 +63,10 @@ class LoggerFactory():
 
         logger = logging.getLogger(prefix)
         logger.setLevel(logging.DEBUG if cls.debug else logging.INFO)
+
+        # Don't add any handlers to logger if configured for testing.
+        if cls.testing:
+            return logger
 
         logfile_handler = logging.FileHandler(cls.logfile)
         logfile_handler.setLevel(logging.DEBUG)
