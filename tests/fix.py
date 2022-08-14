@@ -1,17 +1,32 @@
-import pytest
+"""
+Seperate module for pytest fixtures used in the other tests.
+"""
+
 import string
 import subprocess
 import io
+import importlib
+import pytest
 
 from src import log
 
 @pytest.fixture
 def fix_logging():
+    """
+    Test fixture to configure the LoggerFactory class to test mode. This can be
+    added to tests to remove the logger configuration boilerplate.
+    """
+
     log.LoggerFactory.configure_test_logger()
 
 @pytest.fixture
-def fix_config(fix_logging):
-    from src import config
+def fix_config(fix_logging): # pylint: disable=redefined-outer-name,unused-argument
+    """
+    Test fixture to provide tests with a complete program configuration that
+    can then be updated in the test itself.
+    """
+
+    config = importlib.import_module('src.config')
     config_tree = {
         'heating-schedule': {
             'monday': 60,
@@ -40,13 +55,19 @@ def fix_config(fix_logging):
         }
     }
     if not config.ProgramConfig.check_config(
-        config.CONFIG_REQ_KEYS, 
+        config.CONFIG_REQ_KEYS,
         config_tree):
         pytest.fail('Test configuration is missing required items!')
     return config.ProgramConfig(config_tree, 'TEST_CONFIG')
 
 @pytest.fixture
 def fix_empty_at_queue():
+    """
+    Test fixture that provides tests with an empty 'at' command queue. This
+    function also cleans up commmands added to that queue after test
+    completion.
+    """
+
     at_list = io.BytesIO(subprocess.check_output(['at', '-l']))
     queues = {k: False for k in list(string.ascii_letters)}
     used_queue = None

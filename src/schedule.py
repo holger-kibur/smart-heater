@@ -51,7 +51,6 @@ class AtCmdWrapper():
         """
 
         # This would be exceedingly ugly with f-string
-        
         # pylint: disable=consider-using-f-string
         event_cmd = "echo \"{} {}/switch.py -c {} -a {}\"".format(
             prog_config['environment']['python'],
@@ -61,7 +60,7 @@ class AtCmdWrapper():
         )
         event_cmd += f" | at -q {prog_config['environment']['at_queue']}"
         event_cmd += f" -t {cls.datetime_to_at(event_time)}"
-        
+
         logger.debug("upload command: %s", event_cmd)
         if cls.test_hook_cmd is None:
             subprocess.call(event_cmd, shell=True)

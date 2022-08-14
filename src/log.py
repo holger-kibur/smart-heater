@@ -44,7 +44,7 @@ class LoggerFactory():
 
         All future logger instances will print nothing to files.
         """
-        
+
         cls.logfile = 'TEST_LOGFILE'
         cls.testing = True
 
