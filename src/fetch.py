@@ -71,7 +71,7 @@ def parse_day_average(country, info_rows) -> float:
 
     for row in info_rows:
         for column in row["Columns"]:
-            if column["Name"] == country and row["IsExtraRow"] and row["Name"] == "Average":
+            if column["Name"].upper() == country and row["IsExtraRow"] and row["Name"] == "Average":
                 average_price = float(column["Value"].replace(",", "."))
 
     if average_price is None:

@@ -11,6 +11,12 @@ import toml
 
 from . import util
 
+ACCEPTABLE_REGION_NAMES = [
+    'SYS', 'SE1', 'SE2', 'SE3', 'SE4', 'FI', 'DK1', 'DK2', 'OSLO', 'KR.SAND',
+    'BERGEN', 'MOLDE', 'TR.HEIM', 'TROMSE', 'EE', 'LV', 'LT', 'AT', 'BE',
+    'DE-LU', 'FR', 'NL',
+]
+
 CONFIG_REQ_KEYS = {
     'heating-schedule': [
         'monday',
@@ -52,7 +58,7 @@ class ProgramConfig():
     """
 
     @classmethod
-    def check_config(cls, req_subtree, config_subtree):
+    def check_config_keys(cls, req_subtree, config_subtree):
         """
         Make sure that a loaded configuration contains all the required config
         items.
@@ -64,22 +70,37 @@ class ProgramConfig():
         elif isinstance(req_subtree, dict):
             for (key, subtree) in req_subtree.items():
                 if key not in config_subtree.keys()\
-                    or not cls.check_config(subtree, config_subtree[key]):
+                    or not cls.check_config_keys(subtree, config_subtree[key]):
                     return False
         return True
 
     @classmethod
+    def check_config_region(cls, region_code):
+        return region_code.upper() in ACCEPTABLE_REGION_NAMES
+
+    @classmethod
+    def check_config(cls, unchecked):
+        if not cls.check_config_keys(CONFIG_REQ_KEYS, unchecked):
+            return (False, "Configuration file is missing required keys!")
+
+        if not cls.check_config_region(unchecked['fetch']['region_code']):
+            return (False, "Configuration region is not one of the available ones!")
+
+        return (True, None)
+
+    @classmethod
     def from_file(cls, filepath):
         """
-        Load a configuration from a file and check it using check_config.
+        Load a configuration from a file and check it using check_config_keys.
         """
         try:
             from_file: dict = toml.load(filepath)
         except FileNotFoundError:
             util.exit_critical_bare("Couldm't find configuration file!")
 
-        if not cls.check_config(CONFIG_REQ_KEYS, from_file):
-            util.exit_critical_bare("Configuration file is missing required keys!")
+        check_res = cls.check_config(from_file)
+        if not check_res[0]:
+            util.exit_critical_bare(check_res[1])
 
         return cls(from_file, filepath)
 
