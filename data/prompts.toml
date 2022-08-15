@@ -1,0 +1,84 @@
+[lang_choices]
+us = "English"
+ee = "Eesti"
+
+[greeting]
+us = "Welcome to the smart heater configuration wizard!"
+ee = "Tere tulemast nuttikütte konfiguratsiooniviisardisse!"
+
+[try_again]
+us = "Try again."
+ee = "Proovige uuesti."
+
+[weekdays.daylist]
+us = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+ee = ["Esmaspäev", "Teisipäev", "Kolmapäev", "Neljapäev", "Reede", "Laupäev", "Pühapäev"]
+
+[weekdays.prompt]
+us = "Enter how many minutes you'd like to heat for each day"
+ee = "Sisestage mittu minutit teie tahate kutta igaks päekvas"
+
+[weekdays.invalid]
+us = "Invalid input!"
+ee = "Vigane sisestus!"
+
+[region_code.prompt]
+us = "Enter your region code. Any region found on Nordpool's market page is acceptable"
+ee = "Sisestage teie regioonikood. Koik regiooni koodid leitud Nordpooli energiahindade lehekuljelt on vastuvoetavad"
+
+[region_code.invalid]
+us = "Invalid region code!"
+ee = "Vigane regioonikood!"
+
+[python_cmd.prompt]
+us = "Enter Python executable path or command (version >= 3.7)"
+ee = "Sisestage Pythoni programmiasukoha voi kasu (versioon >= 3.7)"
+
+[python_cmd.auto_fail]
+us = "Couldn't reuse the currently executing Python program!"
+ee = "Ei suutnud kasutada praegu jooksevat Pythoni versiooni nuttikütte programmide jaoks!"
+
+[python_cmd.invalid.no_exist]
+us = "Command or executable doesn't exist!"
+ee = "Kask voi kaivitav programm ei eksisteeri!"
+
+[python_cmd.invalid.not_python]
+us = "Command or executable isn't Python!"
+ee = "Kask voi kaivitav programm ei ole Python!"
+
+[python_cmd.invalid.version]
+us = "Command or executable Python version isn't supported!"
+ee = "kasu voi kaivitava programmi versioon ei ole toetatud!"
+
+[gpio.prompt]
+us = "Enter switching GPIO pin number"
+ee = "Sisestage kutteluliti GPIO pinni numbri"
+
+[gpio.invalid]
+us = "Invalid GPIO pin number!"
+ee = "Vigane GPIO pinni number!"
+
+[gpio_reverse.prompt]
+us = "Should pin logic be reversed (e.g. ON = LOW, OFF = HIGH)? Enter y/n"
+ee = "Kas pinni loogika on vastupidine (naidiseks kutte sees = pin madalal, kutte valjas = pin korgel)? Sisestage jah/ei"
+
+[gpio_reverse.answer_yes]
+us = "y"
+ee = "jah"
+
+[gpio_reverse.answer_no]
+us = "n"
+ee = "ei"
+
+[gpio_reverse.invalid]
+us = "Enter either y or n!"
+ee = "Sisestage jah voi ei!"
+
+[logfile.gen_prompt]
+us = "Enter desired logfile path, or press enter for the default path"
+ee = "Sisestage soovitud logifaili asukoht, voi pressige enter et valida vaikeasukoha"
+
+[save_config.prompt]
+us = "Enter new filepath for configuration file, or press enter for default/previous"
+ee = "Sisestage uue asukoha konfiguratsioonifailiks, voi pressige enter et valida eelmise/vaike"
+

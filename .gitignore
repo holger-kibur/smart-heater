@@ -3,3 +3,4 @@
 
 *.toml
 !sample_conf.toml
+!data/*.toml
