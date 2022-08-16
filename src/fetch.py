@@ -50,9 +50,10 @@ def parse_hourly_prices(country, info_rows) -> list:
         for column in row["Columns"]:
             if column["Name"] == country:
                 if not row["IsExtraRow"]:
+                    print(column['Value'], row['StartTime'])
                     price_info.append({
                         "start_time": datetime.fromisoformat(row["StartTime"]),
-                        "price": float(column["Value"].replace(",", ".")),
+                        "price": float(column["Value"].replace(",", ".").replace(' ', '')),
                     })
 
     # Sanity check for whether all the prices are tomorrow
@@ -91,7 +92,7 @@ def do_fetch(prog_config):
     table_rows = fetch_info(prog_config["fetch"]["url"])
 
     # Parse hourly prices
-    pricelist = parse_hourly_prices(prog_config["fetch"]["country_code"], table_rows)
+    pricelist = parse_hourly_prices(prog_config["fetch"]["region_code"], table_rows)
 
     # Build schedule from prices
     sched_builder = cron.ScheduleBuilder()

@@ -7,6 +7,7 @@ Classes:
     ProgramConfig
 """
 
+import os
 import toml
 
 from . import util
@@ -29,11 +30,12 @@ CONFIG_REQ_KEYS = {
     ],
     'fetch': [
         'url',
-        'country_code',
+        'region_code',
     ],
     'environment': [
         'python',
-        'at_queue',
+        'fetch_queue',
+        'switch_queue',
     ],
     'hardware': [
         'switch_pin',
@@ -116,3 +118,16 @@ class ProgramConfig():
         Get configured heating minutes for the weekday of the passed datetime.
         """
         return list(self["heating-schedule"].values())[date.weekday()]
+
+    def gen_fetch_command(self):
+        return "{} {}/fetch.py -c {}".format(
+            self['environment']['python'],
+            os.getcwd(),
+            self.source_file)
+
+    def gen_switch_command(self, action):
+        return "{} {}/switch.py -c {} -a {}".format(
+            self['environment']['python'],
+            os.getcwd(),
+            self.source_file,
+            action)

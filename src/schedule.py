@@ -25,24 +25,6 @@ class AtCmdWrapper():
 
     test_hook_cmd = None
 
-    @staticmethod
-    def datetime_to_at(time: datetime.datetime) -> str:
-        """
-        Convert a datetime instance to an "at" command with that exact time
-        specified with the -t flag.
-        """
-
-        systime = util.utc_to_system_time(time)
-        # Disable linter warning because making this an f-string would make the
-        # line unbearably long.
-        # pylint: disable=consider-using-f-string
-        return "{:0>4}{:0>2}{:0>2}{:0>2}{:0>2}".format(
-            systime.year,
-            systime.month,
-            systime.day,
-            systime.hour,
-            systime.minute)
-
     @classmethod
     def upload_command(cls, prog_config, event_type, event_time):
         """

@@ -91,3 +91,4 @@ def pretty_datetime(date_time: datetime) -> str:
     """
 
     return date_time.strftime("%H:%M:%S %d/%m/%y")
+
