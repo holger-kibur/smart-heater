@@ -61,7 +61,7 @@ def get_user_weekday_minutes():
     pc = PromptCollection('weekdays')
     weekdays = {}
     print(pc.prompt())
-    for day in pc['daylist']:
+    for i, day in enumerate(pc['daylist']):
         while True:
             day_in = get_input(day)
             try:
@@ -70,7 +70,8 @@ def get_user_weekday_minutes():
                 print(pc.try_again())
                 continue
             break
-        weekdays[day.lower()] = day_num_minutes
+        print(config.WEEKDAY_KEYS[i])
+        weekdays[config.WEEKDAY_KEYS[i]] = day_num_minutes
     return weekdays
 
 def get_user_region_code():
@@ -138,7 +139,7 @@ def create_new_conf():
         print(PromptCollection('python_cmd')['auto_fail'])
         conf['environment']['python'] = get_user_python_cmd()
 
-    conf['environment']['at_queue'] = 'a'
+    conf['environment']['at_queue'] = 's'
     conf['hardware']['switch_pin'] = get_user_relay_gpio()
     conf['hardware']['reverse_polarity'] = get_user_polarity()
     conf['logging']['fetch_logfile'] = "fetch.log"
@@ -171,14 +172,18 @@ def get_user_language():
 
         print("Bad selection. Try again.")
 
-def user_save_file():
+def user_save_file(conf):
     pc = PromptCollection('save_config')
     newpath = get_input(pc.prompt())
     if not newpath:
         # User chose to reuse previous path or default
         newpath = conf.source_file
-    toml.dump(conf, newpath)
-    return newpath
+    else:
+        newpath += '.toml'
+    with open(newpath, 'w') as conf_file:
+        toml.dump(conf.config_tree, conf_file)
+    print(newpath)
+    conf.source_file = newpath
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -196,34 +201,29 @@ if __name__ == '__main__':
     print(langfile['greeting'][lang])
     if args.configfile:
         conf = config.ProgramConfig.from_file(args.configfile)
-        old_queues = (conf['environment']['fetch_queue'], conf['environment']['switch_queue'])
+        old_switch_queue = conf['environment']['switch_queue']
         amend_existing_conf(conf)
     else:
         conf = create_new_conf()
-        old_queues = None
+        old_switch_queue = None
         print(conf)
 
-    conf_file = user_save_file()
+    user_save_file(conf)
 
-    with manage.queue_pidfile():
-        # Redo fetch queue
-        fetch_scheduled = False
-        for sched_fetch in manage.queue_filter(manage.get_at_queue_members(), conf['fetch_queue']):
-            fetch_scheduled = True
-            manage.remove_member(sched_fetch)
-            manage.schedule_member(
-                conf.gen_fetch_command(), 
-                sched_fetch.dt, conf['environment']['fetch_queue'])
-        
-        # If there were no fetches scheduled, schedule the next one
-        pass
+    # (Re)set fetch cronjob
+    manage.clear_fetch_cronjob()
+    manage.add_fetch_cronjob(conf)
 
-        # Redo switch queue
-        for i, sched_switch in enumerate(manage.queue_filter(
-                manage.get_at_queue_members(),
-                conf['switch_queue'])):
-            manage.remove_member(sched_switch)
-            manage.schedule_member(
-                conf.gen_switch_command('OFF' if i % 2 == 0 else 'ON'),
-                conf['switch_queue'])
+    # (Re)set switch atjobs
+    # Scheduled times for already queued will not change, but their
+    # configuration filepaths will.
+    if old_switch_queue is not None:
+        with manage.queue_pidfile():
+            for i, sched_switch in enumerate(manage.queue_filter(
+                    manage.get_at_queue_members(),
+                    old_switch_queue)):
+                manage.remove_member(sched_switch)
+                manage.schedule_member(
+                    conf.gen_switch_command('OFF' if i % 2 == 0 else 'ON'),
+                    conf['switch_queue'])
 

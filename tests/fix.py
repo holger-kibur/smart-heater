@@ -39,11 +39,11 @@ def fix_config(fix_logging): # pylint: disable=redefined-outer-name,unused-argum
         },
         'fetch': {
             'url': 'https://www.nordpoolgroup.com/api/marketdata/page/10?currency=,,,EUR',
-            'country_code': 'EE',
+            'region_code': 'EE',
         },
         'environment': {
             'python': 'DUMMY_EXEC',
-            'at_queue': 'a',
+            'switch_queue': 'a',
         },
         'hardware': {
             'switch_pin': 1,
@@ -54,10 +54,9 @@ def fix_config(fix_logging): # pylint: disable=redefined-outer-name,unused-argum
             'switch_logfile': 'TEST_SWITCH_LOG.log',
         }
     }
-    if not config.ProgramConfig.check_config(
-        config.CONFIG_REQ_KEYS,
-        config_tree):
-        pytest.fail('Test configuration is missing required items!')
+    check_result = config.ProgramConfig.check_config(config_tree)
+    if not check_result[0]:
+        pytest.fail(check_result[1])
     return config.ProgramConfig(config_tree, 'TEST_CONFIG')
 
 @pytest.fixture
@@ -86,4 +85,4 @@ def fix_empty_at_queue():
     at_list_after = io.BytesIO(subprocess.check_output(['at', '-l']))
     for line in at_list_after:
         if line.split()[6].decode('UTF-8') == used_queue:
-            subprocess.call(['atrm', line.split()[0].decode('UTF-8')])
+           subprocess.call(['atrm', line.split()[0].decode('UTF-8')])

@@ -18,23 +18,24 @@ ACCEPTABLE_REGION_NAMES = [
     'DE-LU', 'FR', 'NL',
 ]
 
+WEEKDAY_KEYS = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+]
+
 CONFIG_REQ_KEYS = {
-    'heating-schedule': [
-        'monday',
-        'tuesday',
-        'wednesday',
-        'thursday',
-        'friday',
-        'saturday',
-        'sunday',
-    ],
+    'heating-schedule': WEEKDAY_KEYS,
     'fetch': [
         'url',
         'region_code',
     ],
     'environment': [
         'python',
-        'fetch_queue',
         'switch_queue',
     ],
     'hardware': [

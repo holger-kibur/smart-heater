@@ -19,7 +19,7 @@ url = "ADD MARKET API URL HERE"
 # Standard two letter country code for where the heater is located.
 # Only the country codes visible on the Nordpool market page are
 # supported.
-country_code = "EE"
+region_code = "EE"
 
 [hardware]
 # GPIO pin that relay is attached to. This is the pin that will
@@ -41,7 +41,7 @@ python = 'python3'
 # Which 'at' command queue to schedule commands in. Unless you are
 # using 'at' to schedule other stuff on your system, this can be left
 # as 'a'.
-at_queue = 'a'
+switch_queue = 'a'
 
 [logging]
 # filepath for where to store logs from the fetch script.
