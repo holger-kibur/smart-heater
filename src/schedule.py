@@ -8,50 +8,10 @@ Classes:
 """
 
 import datetime
-import os
-import subprocess
 
-from . import log, util
+from . import log, util, manage
 
 logger = log.LoggerFactory.get_logger("SCHEDULE")
-
-
-class AtCmdWrapper():
-    """
-    Namespacing class to wrap around functions which interact with the "at"
-    daemon. Also contains a testing hook that intercepts commands
-    to-be-uploaded.
-    """
-
-    test_hook_cmd = None
-
-    @classmethod
-    def upload_command(cls, prog_config, event_type, event_time):
-        """
-        Transform an on/off command into an "at" command to run the
-        turn_on/turn_off scripts, and upload the command to the "at" daemon.
-        """
-
-        # This would be exceedingly ugly with f-string
-        # pylint: disable=consider-using-f-string
-        event_cmd = "echo \"{} {}/switch.py -c {} -a {}\"".format(
-            prog_config['environment']['python'],
-            os.getcwd(),
-            prog_config.source_file,
-            'ON' if event_type == ScheduleBuilder.ON_EVENT else 'OFF',
-        )
-        event_cmd += f" | at -q {prog_config['environment']['at_queue']}"
-        event_cmd += f" -t {cls.datetime_to_at(event_time)}"
-
-        logger.debug("upload command: %s", event_cmd)
-        if cls.test_hook_cmd is None:
-            subprocess.call(event_cmd, shell=True)
-        else:
-            # Disable linter warning because it is None checked, and is
-            # dynamically updated for testing.
-            cls.test_hook_cmd( # pylint: disable=not-callable
-                event_type, event_cmd)
-
 
 class ScheduleBuilder():
     """
@@ -136,6 +96,16 @@ class ScheduleBuilder():
                         )
         logger.info("-" * 69)
 
+    def get_sched_day_start_utc(self) -> datetime.datetime:
+        if len(self.sched) == 0:
+            raise Exception("Can't get schedule day start with an empty schedule!")
+        tmrw_first_time = self.sched[0][1]
+        tmrw_midnight = datetime.datetime(
+                year=tmrw_first_time.year, 
+                month=tmrw_first_time.month, 
+                day=tmrw_first_time.day)
+        return util.market_time_to_utc(tmrw_midnight)
+
     def upload(self, prog_config):
         """
         Upload the current schedule to the system "at" daemon to be ran.
@@ -159,6 +129,15 @@ class ScheduleBuilder():
         if self.sched[-1][0] != self.OFF_EVENT:
             raise Exception("Schedule doesn't end with OFF event!")
 
+        # Clear any switches scheduled for tomorrow
+        manage.AtWrapper.clear_queue_from(
+                prog_config['environment']['switch_queue'],
+                self.get_sched_day_start_utc())
+
+        # Upload switches
         for (event_type, event_time) in self.sched:
-            AtCmdWrapper.upload_command(
-                prog_config, event_type, util.market_time_to_utc(event_time))
+            manage.AtWrapper.add_switch_command(
+                    prog_config,
+                    'ON' if event_type == self.ON_EVENT else 'OFF',
+                    util.market_time_to_utc(event_time))
+

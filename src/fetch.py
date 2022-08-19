@@ -56,30 +56,11 @@ def parse_hourly_prices(country, info_rows) -> list:
                         "price": float(column["Value"].replace(",", ".").replace(' ', '')),
                     })
 
-    # Sanity check for whether all the prices are tomorrow
-    # for price in price_info:
-    #     if price["day"].weekday() != (datetime.today().weekday() + 1) % 7:
-    #         util.exit_critical(logger, "Not all prices are tagged for tomorrow!")
+    # Fail the script if the prices are not for tomorrow
+    if price_info[0]['start_time'] < util.next_market_day_start():
+        util.exit_critical(logger, "Fetched today's price information, not tomorrows as expected!")
 
     return sorted(price_info, key=lambda x: x["price"])
-
-def parse_day_average(country, info_rows) -> float:
-    """
-    Parse the daily average price for the given country from info_rows.
-    """
-
-    average_price = None
-
-    for row in info_rows:
-        for column in row["Columns"]:
-            if column["Name"].upper() == country and row["IsExtraRow"] and row["Name"] == "Average":
-                average_price = float(column["Value"].replace(",", "."))
-
-    if average_price is None:
-        logger.error("Could not parse average price!")
-        return None
-    return average_price
-
 
 def do_fetch(prog_config):
     """

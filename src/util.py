@@ -48,6 +48,12 @@ def market_time_to_utc(market_time: datetime) -> datetime:
 
     return MARKET_TIMEZONE.localize(market_time).astimezone(timezone.utc)
 
+def utc_to_market_time(utc_time: datetime) -> datetime:
+    """
+    Convert a time in the market's timezone to the equivalent time in UTC.
+    """
+
+    return pytz.timezone('Etc/UTC').localize(utc_time).astimezone(MARKET_TIMEZONE)
 
 def utc_to_system_time(utc_datetime: datetime) -> datetime:
     """
@@ -60,6 +66,16 @@ def utc_to_system_time(utc_datetime: datetime) -> datetime:
     system_utc_offset_secs = -[time.timezone, time.altzone][time.daylight]
     return utc_datetime + timedelta(seconds=system_utc_offset_secs)
 
+def system_time_to_utc(sys_datetime: datetime) -> datetime:
+    """
+    Convert a datetime in UTC to the equivalent time in the systems local
+    timezone.
+
+    Note that is is a NAIVE conversion e.g. the datetime tzinfo is not modified.
+    """
+
+    utc_system_offset_secs = [time.timezone, time.altzone][time.daylight]
+    return sys_datetime + timedelta(seconds=utc_system_offset_secs)
 
 def plus_hour(date_time: datetime) -> datetime:
     """
@@ -92,3 +108,7 @@ def pretty_datetime(date_time: datetime) -> str:
 
     return date_time.strftime("%H:%M:%S %d/%m/%y")
 
+def next_market_day_start() -> datetime:
+    market_now = utc_to_market_time(system_time_to_utc(datetime.now()))
+    return datetime(year=market_now.year, month=market_now.month, day=market_now.day)\
+            + timedelta(days=1)
