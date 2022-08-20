@@ -48,49 +48,55 @@ class AtWrapper():
         # from util.utc_to_system_time might not be.
         dt = util.utc_to_system_time(dt).replace(tzinfo=None)
         members = cls.get_at_queue_members()
-        for mem in queue_filter(members, queue):
+        for mem in cls.queue_filter(members, queue):
             if mem.dt >= dt:
                 subprocess.call(['atrm', str(mem.id)])
 
     @classmethod
     def add_switch_command(cls, prog_config, action, dt):
-        switch_cmd = prog_config.gen_switch_command(action) \
-                + " | at -q {} -t {}".format(
-                        prog_config['environment']['switch_queue'],
-                        cls.datetime_to_at(dt))
-        subprocess.call(switch_cmd, shell=True)
+        cls.schedule_member(
+                prog_config.gen_switch_command(action),
+                dt,
+                prog_config['environment']['switch_queue'])
 
-def clear_fetch_cronjob():
-    with crontab.CronTab(user=True) as cron:
-        cron.remove_all(comment=FETCH_CRON_COMMENT)
+    @staticmethod
+    def queue_pidfile():
+        uid = subprocess.check_output(['id', '-u']).decode('UTF-8').strip()
+        return pid.PidFile(f"/var/run/user/{uid}/smart-heater.lock")
 
-def add_fetch_cronjob(prog_config):
-    with crontab.CronTab(user=True) as cron:
-        fetch_job = cron.new(
-                command=prog_config.gen_fetch_command(),
-                comment=FETCH_CRON_COMMENT)
+    @staticmethod
+    def queue_filter(member_list, queue):
+        for member in member_list:
+            if member.queue == queue:
+                yield member
 
-        # Run at 21:30 every day
-        utc_21_30 = util.market_time_to_utc(datetime(
-            year=1970, month=1, day=1, hour=21, minute=30, second=0))
-        sys_21_30 = util.utc_to_system_time(utc_21_30)
-        fetch_job.setall(f'{sys_21_30.minute} {sys_21_30.hour} * * *')
+    @staticmethod
+    def remove_member(member):
+        subprocess.call(['atrm', str(member.id)])
 
-def queue_pidfile():
-    uid = subprocess.check_output(['id', '-u'])
-    return pid.PidFile(f"/var/run/user/{uid}/smart-heater.lock")
-
+    @classmethod
+    def schedule_member(cls, command, dt, queue):
+        wrapped_cmd = f"echo \"{command}\" | at -q {queue} -t {cls.datetime_to_at(dt)}"
+        subprocess.call(wrapped_cmd, shell=True)
 
 
-def queue_filter(member_list, queue):
-    for member in member_list:
-        if member.queue == queue:
-            yield member
+class CronWrapper():
+    @staticmethod
+    def clear_fetch_cronjob():
+        with crontab.CronTab(user=True) as cron:
+            cron.remove_all(comment=FETCH_CRON_COMMENT)
 
-def remove_member(member):
-    subprocess.call(['atrm', member.id])
+    @staticmethod
+    def add_fetch_cronjob(prog_config):
+        with crontab.CronTab(user=True) as cron:
+            fetch_job = cron.new(
+                    command=prog_config.gen_fetch_command(),
+                    comment=FETCH_CRON_COMMENT)
 
-def schedule_member(command, dt, queue):
-    wrapped_cmd = f"echo \"{command}\" | at -q {queue} -t {AtWrapper.datetime_to_at(dt)}"
-    subprocess.call(wrapped_cmd, shell=True)
+            # Run at 21:30 every day
+            utc_21_30 = util.market_time_to_utc(datetime(
+                year=1970, month=1, day=1, hour=21, minute=30, second=0))
+            sys_21_30 = util.utc_to_system_time(utc_21_30)
+            fetch_job.setall(f'{sys_21_30.minute} {sys_21_30.hour} * * *')
+
 

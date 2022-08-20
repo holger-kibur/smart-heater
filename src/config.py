@@ -69,13 +69,16 @@ class ProgramConfig():
         if isinstance(req_subtree, list):
             for key in req_subtree:
                 if key not in config_subtree.keys():
-                    return False
+                    return (False, key)
         elif isinstance(req_subtree, dict):
             for (key, subtree) in req_subtree.items():
-                if key not in config_subtree.keys()\
-                    or not cls.check_config_keys(subtree, config_subtree[key]):
-                    return False
-        return True
+                if key in config_subtree.keys():
+                    downtree = cls.check_config_keys(subtree, config_subtree[key])
+                    if not downtree[0]:
+                        return downtree
+                else:
+                    return (False, key)
+        return (True, None)
 
     @classmethod
     def check_config_region(cls, region_code):
@@ -83,8 +86,9 @@ class ProgramConfig():
 
     @classmethod
     def check_config(cls, unchecked):
-        if not cls.check_config_keys(CONFIG_REQ_KEYS, unchecked):
-            return (False, "Configuration file is missing required keys!")
+        key_check_res = cls.check_config_keys(CONFIG_REQ_KEYS, unchecked) 
+        if not key_check_res[0]:
+            return (False, f"Configuration file is missing required key: {key_check_res[1]}!")
 
         if not cls.check_config_region(unchecked['fetch']['region_code']):
             return (False, "Configuration region is not one of the available ones!")
@@ -113,6 +117,9 @@ class ProgramConfig():
 
     def __getitem__(self, items):
         return self.config_tree.__getitem__(items)
+
+    def __setitem__(self, key, val):
+        self.config_tree[key] = val
 
     def get_heating_minutes(self, date):
         """

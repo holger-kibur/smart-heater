@@ -57,8 +57,8 @@ def parse_hourly_prices(country, info_rows) -> list:
                     })
 
     # Fail the script if the prices are not for tomorrow
-    if price_info[0]['start_time'] < util.next_market_day_start():
-        util.exit_critical(logger, "Fetched today's price information, not tomorrows as expected!")
+    # if price_info[0]['start_time'] < util.next_market_day_start():
+    #     util.exit_critical(logger, "Fetched today's price information, not tomorrows as expected!")
 
     return sorted(price_info, key=lambda x: x["price"])
 

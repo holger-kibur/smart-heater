@@ -39,13 +39,13 @@ class ScheduleBuilder():
         Add some number of minutes of heating within the hour starting at
         start_time to the schedule.
 
-        This function upholds the condition of string on/off event interleaving.
+        This function upholds the condition of strict on/off event interleaving.
         This means that after each insertion, there will be no such case that
         the same event type can occur twice in a row chronologically.
 
         The events in the schedule are not necessarily in chronological order,
         but they can be sorted using the standard library function, due to the
-        string interleaving condition.
+        strict interleaving condition.
 
         It's important that there be only one non-60 minute time-slice, and that
         it be the last one to be added.
@@ -129,7 +129,7 @@ class ScheduleBuilder():
         if self.sched[-1][0] != self.OFF_EVENT:
             raise Exception("Schedule doesn't end with OFF event!")
 
-        # Clear any switches scheduled for tomorrow
+        # Clear any switches scheduled for the same day
         manage.AtWrapper.clear_queue_from(
                 prog_config['environment']['switch_queue'],
                 self.get_sched_day_start_utc())

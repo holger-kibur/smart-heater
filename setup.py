@@ -1,6 +1,5 @@
 import sys
 import os
-from datetime import datetime
 import subprocess
 import argparse
 import toml
@@ -15,6 +14,20 @@ class PromptCollection():
     def config_pc(cls, langfile, lang):
         cls.GLOB_LANGFILE = langfile
         cls.GLOB_LANG = lang
+
+    @classmethod
+    def _toplevel(cls, key):
+        if cls.GLOB_LANGFILE is not None:
+            return cls.GLOB_LANGFILE[key][cls.GLOB_LANG]
+        raise Exception("PromptCollection needs to be configured prior!")
+
+    @classmethod
+    def greeting(cls):
+        return cls._toplevel('greeting')
+
+    @classmethod
+    def amend(cls):
+        return cls._toplevel('amend')
 
     def __init__(self, section):
         if self.GLOB_LANGFILE is not None and self.GLOB_LANG is not None:
@@ -37,12 +50,26 @@ class PromptCollection():
         if subkey is not None:
             pre = pre[subkey]
         return pre[self.GLOB_LANG]
+
+    def label(self):
+        return self.root['label'][self.GLOB_LANG]
     
     def __getitem__(self, key):
         return self.root[key][self.GLOB_LANG]
 
 def get_input(prompt):
     return input(f"{prompt}: ")
+
+def get_yes_no(prompt):
+    pc = PromptCollection('yesno')
+    yes = pc['yes']
+    no = pc['no']
+    while True:
+        ans = input(f"{prompt} ({yes}/{no}): ")
+        if ans.lower() not in (yes, no):
+            print(pc.invalid())
+            continue
+        return ans.lower() == yes
 
 def check_python_cmd_valid(python_cmd):
     try:
@@ -109,14 +136,7 @@ def get_user_relay_gpio():
 
 def get_user_polarity():
     pc = PromptCollection('gpio_reverse')
-    yes = pc['answer_yes']
-    no = pc['answer_no']
-    while True:
-        pole_switch_raw = get_input(pc.prompt())
-        if pole_switch_raw.lower() not in (yes, no):
-            print(pc.try_again())
-            continue
-        return pole_switch_raw.lower() == yes
+    return get_yes_no(pc.prompt())
 
 def get_user_logfile():
     pass
@@ -139,20 +159,46 @@ def create_new_conf():
         print(PromptCollection('python_cmd')['auto_fail'])
         conf['environment']['python'] = get_user_python_cmd()
 
-    conf['environment']['at_queue'] = 's'
+    conf['environment']['switch_queue'] = 's'
     conf['hardware']['switch_pin'] = get_user_relay_gpio()
     conf['hardware']['reverse_polarity'] = get_user_polarity()
     conf['logging']['fetch_logfile'] = "fetch.log"
     conf['logging']['switch_logfile'] = "switch.log"
 
     # Validate new configuration just to be sure
-    if not config.ProgramConfig.check_config(conf):
-        util.exit_critical_bare("Something wen't wrong with the configuration! Try again!")
+    conf_check = config.ProgramConfig.check_config(conf)
+    if not conf_check[0]:
+        util.exit_critical_bare(f"Something wen't wrong with the configuration! Try again!\nReason: {conf_check[1]}")
 
     return config.ProgramConfig(conf, "default_config.toml")
 
+def user_amend_field(langkey, change_func):
+    pc = PromptCollection(langkey)
+    if get_yes_no(f"{PromptCollection.amend()} {pc.label()}"):
+        return change_func()
+    return None
+
 def amend_existing_conf(conf):
-    pass
+    temp = user_amend_field('weekdays', get_user_weekday_minutes)
+    if temp is not None:
+        conf['heating-schedule'] = temp
+
+    temp = user_amend_field('region_code', get_user_region_code)
+    if temp is not None:
+        conf['fetch']['region_code'] = temp
+
+    temp = user_amend_field('gpio', get_user_relay_gpio)
+    if temp is not None:
+        conf['hardware']['switch_pin'] = temp
+
+    temp = user_amend_field('gpio_reverse', get_user_polarity)
+    if temp is not None:
+        conf['hardware']['reverse_polarity'] = temp
+
+    # Validate amended configuration just to be sure
+    conf_check = config.ProgramConfig.check_config(conf.config_tree)
+    if not conf_check[0]:
+        util.exit_critical_bare(f"Something wen't wrong with amending the configuration! Try again!\nReason: {conf_check[1]}")
 
 def get_user_language():
     while True:
@@ -180,9 +226,9 @@ def user_save_file(conf):
         newpath = conf.source_file
     else:
         newpath += '.toml'
+    print(newpath)
     with open(newpath, 'w') as conf_file:
         toml.dump(conf.config_tree, conf_file)
-    print(newpath)
     conf.source_file = newpath
 
 if __name__ == '__main__':
@@ -198,9 +244,9 @@ if __name__ == '__main__':
     lang = get_user_language()
     PromptCollection.config_pc(langfile, lang)
 
-    print(langfile['greeting'][lang])
+    print(PromptCollection.greeting())
     if args.configfile:
-        conf = config.ProgramConfig.from_file(args.configfile)
+        conf = config.ProgramConfig.from_file(args.configfile[0])
         old_switch_queue = conf['environment']['switch_queue']
         amend_existing_conf(conf)
     else:
@@ -211,19 +257,21 @@ if __name__ == '__main__':
     user_save_file(conf)
 
     # (Re)set fetch cronjob
-    manage.clear_fetch_cronjob()
-    manage.add_fetch_cronjob(conf)
+    manage.CronWrapper.clear_fetch_cronjob()
+    manage.CronWrapper.add_fetch_cronjob(conf)
 
     # (Re)set switch atjobs
     # Scheduled times for already queued will not change, but their
     # configuration filepaths will.
+    at = manage.AtWrapper
     if old_switch_queue is not None:
-        with manage.queue_pidfile():
-            for i, sched_switch in enumerate(manage.queue_filter(
-                    manage.get_at_queue_members(),
+        with at.queue_pidfile():
+            for i, sched_switch in enumerate(at.queue_filter(
+                    at.get_at_queue_members(),
                     old_switch_queue)):
-                manage.remove_member(sched_switch)
-                manage.schedule_member(
-                    conf.gen_switch_command('OFF' if i % 2 == 0 else 'ON'),
-                    conf['switch_queue'])
+                at.remove_member(sched_switch)
+                at.add_switch_command(
+                        conf,
+                        'OFF' if i % 2 == 0 else 'ON',
+                        sched_switch.dt)
 

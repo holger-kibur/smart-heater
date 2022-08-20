@@ -6,9 +6,25 @@ ee = "Eesti"
 us = "Welcome to the smart heater configuration wizard!"
 ee = "Tere tulemast nuttikütte konfiguratsiooniviisardisse!"
 
+[amend]
+us = "Would you like to change"
+ee = "Kas soovite muuta"
+
 [try_again]
 us = "Try again."
 ee = "Proovige uuesti."
+
+[yesno.yes]
+us = "y"
+ee = "j"
+
+[yesno.no]
+us = "n"
+ee = "e"
+
+[yesno.invalid]
+us = "Has to be either 'y' or 'n'!"
+ee = "Sisend peab olema kas 'j' voi 'e'"
 
 [weekdays.daylist]
 us = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -22,6 +38,10 @@ ee = "Sisestage mittu minutit teie tahate kutta igaks päekvas"
 us = "Invalid input!"
 ee = "Vigane sisestus!"
 
+[weekdays.label]
+us = "the heating schedule"
+ee = "kuttmistunde"
+
 [region_code.prompt]
 us = "Enter your region code. Any region found on Nordpool's market page is acceptable"
 ee = "Sisestage teie regioonikood. Koik regiooni koodid leitud Nordpooli energiahindade lehekuljelt on vastuvoetavad"
@@ -29,6 +49,10 @@ ee = "Sisestage teie regioonikood. Koik regiooni koodid leitud Nordpooli energia
 [region_code.invalid]
 us = "Invalid region code!"
 ee = "Vigane regioonikood!"
+
+[region_code.label]
+us = "your region code"
+ee = "teie regioonicoodi"
 
 [python_cmd.prompt]
 us = "Enter Python executable path or command (version >= 3.7)"
@@ -58,21 +82,21 @@ ee = "Sisestage kutteluliti GPIO pinni numbri"
 us = "Invalid GPIO pin number!"
 ee = "Vigane GPIO pinni number!"
 
+[gpio.label]
+us = "the switching GPIO pin"
+ee = "switchimise GPIO pinni"
+
 [gpio_reverse.prompt]
 us = "Should pin logic be reversed (e.g. ON = LOW, OFF = HIGH)? Enter y/n"
 ee = "Kas pinni loogika on vastupidine (naidiseks kutte sees = pin madalal, kutte valjas = pin korgel)? Sisestage jah/ei"
 
-[gpio_reverse.answer_yes]
-us = "y"
-ee = "jah"
-
-[gpio_reverse.answer_no]
-us = "n"
-ee = "ei"
-
 [gpio_reverse.invalid]
 us = "Enter either y or n!"
 ee = "Sisestage jah voi ei!"
+
+[gpio_reverse.label]
+us = "the switching polarity"
+ee = "switchimise loogika polaarsust"
 
 [logfile.gen_prompt]
 us = "Enter desired logfile path, or press enter for the default path"
