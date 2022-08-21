@@ -37,8 +37,8 @@ if __name__ == "__main__":
 
     # Configure logger factory
     log.LoggerFactory.configure_logger(args.verbose,
-            prog_config['logging']['fetch_logfile'],
-            args.debug)
+                                       prog_config['logging']['fetch_logfile'],
+                                       args.debug)
 
     # Import rest of modules
     from src import fetch

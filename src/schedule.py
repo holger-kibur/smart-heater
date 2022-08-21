@@ -8,10 +8,12 @@ Classes:
 """
 
 import datetime
+from typing import TypeVar
 
 from . import log, util, manage
 
 logger = log.LoggerFactory.get_logger("SCHEDULE")
+
 
 class ScheduleBuilder():
     """
@@ -28,6 +30,7 @@ class ScheduleBuilder():
     relays, for example.
     """
 
+    SwitchEvent = TypeVar('SwitchEvent')
     ON_EVENT = 0
     OFF_EVENT = 1
 
@@ -97,13 +100,20 @@ class ScheduleBuilder():
         logger.info("-" * 69)
 
     def get_sched_day_start_utc(self) -> datetime.datetime:
+        """
+        Get start time of the day in which times are currently scheduled.
+
+        @return Day start time (00:00) in UTC.
+        """
+
         if len(self.sched) == 0:
-            raise Exception("Can't get schedule day start with an empty schedule!")
+            raise Exception(
+                "Can't get schedule day start with an empty schedule!")
         tmrw_first_time = self.sched[0][1]
         tmrw_midnight = datetime.datetime(
-                year=tmrw_first_time.year, 
-                month=tmrw_first_time.month, 
-                day=tmrw_first_time.day)
+            year=tmrw_first_time.year,
+            month=tmrw_first_time.month,
+            day=tmrw_first_time.day)
         return util.market_time_to_utc(tmrw_midnight)
 
     def upload(self, prog_config):
@@ -131,13 +141,12 @@ class ScheduleBuilder():
 
         # Clear any switches scheduled for the same day
         manage.AtWrapper.clear_queue_from(
-                prog_config['environment']['switch_queue'],
-                self.get_sched_day_start_utc())
+            prog_config['environment']['switch_queue'],
+            self.get_sched_day_start_utc())
 
         # Upload switches
         for (event_type, event_time) in self.sched:
             manage.AtWrapper.add_switch_command(
-                    prog_config,
-                    'ON' if event_type == self.ON_EVENT else 'OFF',
-                    util.market_time_to_utc(event_time))
-
+                prog_config,
+                'ON' if event_type == self.ON_EVENT else 'OFF',
+                util.market_time_to_utc(event_time))

@@ -1,0 +1,13 @@
+[MAIN]
+load-plugins=pylint.extensions.typing
+
+[BASIC]
+good-names = id, dt, i, pc, at, yes, no
+
+[MESSAGES CONTROL]
+disable = 
+    consider-using-f-string,
+    too-few-public-methods,
+    unsubscriptable-object,
+    consider-alternative-union-syntax,
+    deprecated-typing-alias,

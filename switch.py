@@ -10,15 +10,15 @@ from src import log, verify_env, util, config
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--action', nargs=1, required=True,
-            choices=['ON', 'OFF'], help='Switching action to perform.')
+                        choices=['ON', 'OFF'], help='Switching action to perform.')
     parser.add_argument('-c', '--configfile', nargs=1, required=True,
-            help='Required configuration file path.')
+                        help='Required configuration file path.')
     args = parser.parse_args()
 
     verify_result = verify_env.verify_environment()
     if not verify_result[0]:
         util.exit_critical_bare(
-                f"Environment not suitable: {verify_result[1]}")
+            f"Environment not suitable: {verify_result[1]}")
 
     # verify_environment ensures that we can import this, but to satisfy
     # static analysis on non-rpi environments, we have to do it this way.
@@ -30,9 +30,9 @@ if __name__ == "__main__":
         util.exit_critical_bare("Couldn't find configuration file!")
 
     log.LoggerFactory.configure_logger(
-            verbose=False,
-            logfile=prog_config['logging']['switch_logfile'],
-            debug=False)
+        verbose=False,
+        logfile=prog_config['logging']['switch_logfile'],
+        debug=False)
 
     out_pin = prog_config['hardware']['switch_pin']
     pin_state = GPIO.HIGH if args.action[0] == 'ON' else GPIO.LOW

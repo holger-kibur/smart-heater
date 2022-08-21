@@ -6,6 +6,7 @@ import subprocess
 import io
 import importlib
 
+
 def test_fetch(fix_config, fix_empty_at_queue):
     """
     Integration test of the fetch script.

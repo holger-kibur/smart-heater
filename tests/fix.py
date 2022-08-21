@@ -10,6 +10,7 @@ import pytest
 
 from src import log
 
+
 @pytest.fixture
 def fix_logging():
     """
@@ -19,8 +20,9 @@ def fix_logging():
 
     log.LoggerFactory.configure_test_logger()
 
+
 @pytest.fixture
-def fix_config(fix_logging): # pylint: disable=redefined-outer-name,unused-argument
+def fix_config(fix_logging):  # pylint: disable=redefined-outer-name,unused-argument
     """
     Test fixture to provide tests with a complete program configuration that
     can then be updated in the test itself.
@@ -59,6 +61,7 @@ def fix_config(fix_logging): # pylint: disable=redefined-outer-name,unused-argum
         pytest.fail(check_result[1])
     return config.ProgramConfig(config_tree, 'TEST_CONFIG')
 
+
 @pytest.fixture
 def fix_empty_at_queue():
     """
@@ -85,4 +88,4 @@ def fix_empty_at_queue():
     at_list_after = io.BytesIO(subprocess.check_output(['at', '-l']))
     for line in at_list_after:
         if line.split()[6].decode('UTF-8') == used_queue:
-           subprocess.call(['atrm', line.split()[0].decode('UTF-8')])
+            subprocess.call(['atrm', line.split()[0].decode('UTF-8')])
