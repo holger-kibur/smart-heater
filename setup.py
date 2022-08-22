@@ -2,6 +2,7 @@
 Script for conveniently creating a working configuration and setting up
 crontab, atjobs. It can also be used to amend an existing configuration.
 """
+from __future__ import annotations
 
 import sys
 import os
@@ -294,10 +295,11 @@ def create_new_conf() -> config.ProgramConfig:
         conf['environment']['python'] = get_user_python_cmd()
 
     conf['environment']['switch_queue'] = 's'
+    conf['environment']['script_dir'] = os.getcwd()
     conf['hardware']['switch_pin'] = get_user_relay_gpio()
     conf['hardware']['reverse_polarity'] = get_user_polarity()
-    conf['logging']['fetch_logfile'] = "fetch.log"
-    conf['logging']['switch_logfile'] = "switch.log"
+    conf['logging']['fetch_logfile'] = "/home/pi/Desktop/smart-heater/fetch.log"
+    conf['logging']['switch_logfile'] = "/home/pi/Desktop/smart-heater/switch.log"
 
     # Validate new configuration just to be sure
     conf_check = config.ProgramConfig.check_config(conf)
@@ -405,12 +407,14 @@ def user_save_file(conf: config.ProgramConfig):
 
     pc = PromptCollection('save_config')
     newpath = get_input(pc.prompt())
+
     if not newpath:
         # User chose to reuse previous path or default
         newpath = conf.source_file
-    else:
-        newpath += '.toml'
-    print(newpath)
+    elif not os.path.isabs(newpath):
+        newpath = config.CONFIG_FOLDER + newpath + '.toml'
+
+    os.makedirs(os.path.dirname(newpath), exist_ok=True)
     with open(newpath, 'w', encoding='UTF-8') as conf_file:
         toml.dump(conf.config_tree, conf_file)
     conf.source_file = newpath
@@ -438,8 +442,7 @@ def do_setup(args: argparse.Namespace):
     else:
         conf = create_new_conf()
         old_switch_queue = None
-        print(conf)
-
+    print(conf.source_file)
     user_save_file(conf)
 
     # (Re)set fetch cronjob

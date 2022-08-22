@@ -42,6 +42,7 @@ python = 'python3'
 # using 'at' to schedule other stuff on your system, this can be left
 # as 'a'.
 switch_queue = 'a'
+script_dir = "ADD INSTALLATION DIRECTORY HERE"
 
 [logging]
 # filepath for where to store logs from the fetch script.

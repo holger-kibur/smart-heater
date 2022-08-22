@@ -39,6 +39,7 @@ CONFIG_REQ_KEYS = {
     ],
     'environment': [
         'python',
+        'script_dir',
         'switch_queue',
     ],
     'hardware': [
@@ -51,6 +52,7 @@ CONFIG_REQ_KEYS = {
     ],
 }
 
+CONFIG_FOLDER = f"/home/{os.getenv('USER')}/.config/smart-heater/"
 
 class ProgramConfig():
     """
@@ -62,6 +64,8 @@ class ProgramConfig():
 
     Configuration file doesn't necessarily need to have all fields assigned. All
     non-provided fields revert to their hardcoded defaults.
+
+    IMPORTANT: The .source_file field of instances are always ABSOLUTE PATHS.
     """
 
     @classmethod
@@ -97,6 +101,8 @@ class ProgramConfig():
                 else:
                     return (False, key)
         return (True, None)
+
+    # TODO: Add more checks for other fields in configuration.
 
     @classmethod
     def check_config_region(cls, region_code: str) -> bool:
@@ -143,6 +149,10 @@ class ProgramConfig():
         @return The new ProgramConfig instance.
         """
 
+        # Simply passed config files are in the default folder.
+        if not os.path.isabs(filepath):
+            filepath = CONFIG_FOLDER + filepath
+
         try:
             from_file: dict = toml.load(filepath)
         except FileNotFoundError:
@@ -185,7 +195,7 @@ class ProgramConfig():
 
         return "{} {}/fetch.py -c {}".format(
             self['environment']['python'],
-            os.getcwd(),
+            self['environment']['script_dir'],
             self.source_file)
 
     def gen_switch_command(self, action) -> str:
@@ -200,6 +210,7 @@ class ProgramConfig():
 
         return "{} {}/switch.py -c {} -a {}".format(
             self['environment']['python'],
-            os.getcwd(),
+            self['environment']['script_dir'],
             self.source_file,
             action)
+

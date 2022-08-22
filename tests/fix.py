@@ -46,6 +46,7 @@ def fix_config(fix_logging):  # pylint: disable=redefined-outer-name,unused-argu
         'environment': {
             'python': 'DUMMY_EXEC',
             'switch_queue': 'a',
+            'script_dir': 'DUMMY PATH',
         },
         'hardware': {
             'switch_pin': 1,

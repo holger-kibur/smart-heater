@@ -24,7 +24,7 @@ if __name__ == "__main__":
     # static analysis on non-rpi environments, we have to do it this way.
     GPIO = importlib.import_module("RPi.GPIO")
 
-    prog_config = config.ProgramConfig.from_file(args.configfile)
+    prog_config = config.ProgramConfig.from_file(args.configfile[0])
     if prog_config is None:
         # Couldn't find configuration file
         util.exit_critical_bare("Couldn't find configuration file!")
@@ -45,3 +45,5 @@ if __name__ == "__main__":
     GPIO.setwarnings(0)
     GPIO.setup(out_pin, GPIO.OUT)
     GPIO.output(out_pin, pin_state)
+
+    log.LoggerFactory.get_logger('SWITCH').info(f'Heating switched {args.action[0]} (pin {pin_state})!')

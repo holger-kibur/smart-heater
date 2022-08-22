@@ -3,6 +3,7 @@ Module to encapsulate all the program's interaction with operating system daemon
 
 The daemons used are 'at' and 'crontab'.
 """
+from __future__ import annotations
 
 from collections.abc import Generator
 import subprocess
@@ -25,8 +26,9 @@ class AtQueueMember():
     def __init__(self, queue_member_str):
         fields = queue_member_str.split()
         self.id = int(fields[0])
-        self.dt = datetime.strptime(
-            " ".join(fields[1:6]), "%a %b %d %H:%M:%S %Y")
+        self.dt = util.system_time_to_utc(
+                datetime.strptime(
+                    " ".join(fields[1:6]), "%a %b %d %H:%M:%S %Y"))
         self.queue = fields[6]
 
 
