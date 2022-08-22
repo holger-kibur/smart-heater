@@ -307,7 +307,7 @@ def create_new_conf() -> config.ProgramConfig:
         util.exit_critical_bare(
             f"Something wen't wrong with the configuration! Try again!\nReason: {conf_check[1]}")
 
-    return config.ProgramConfig(conf, "default_config.toml")
+    return config.ProgramConfig(conf, config.CONFIG_FOLDER + "default_config.toml")
 
 
 def user_amend_field(langkey: str, change_func: Callable[[], T]) -> Optional[T]:
@@ -442,7 +442,6 @@ def do_setup(args: argparse.Namespace):
     else:
         conf = create_new_conf()
         old_switch_queue = None
-    print(conf.source_file)
     user_save_file(conf)
 
     # (Re)set fetch cronjob
