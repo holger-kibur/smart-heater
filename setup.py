@@ -298,8 +298,8 @@ def create_new_conf() -> config.ProgramConfig:
     conf['environment']['script_dir'] = os.getcwd()
     conf['hardware']['switch_pin'] = get_user_relay_gpio()
     conf['hardware']['reverse_polarity'] = get_user_polarity()
-    conf['logging']['fetch_logfile'] = "/home/pi/Desktop/smart-heater/fetch.log"
-    conf['logging']['switch_logfile'] = "/home/pi/Desktop/smart-heater/switch.log"
+    conf['logging']['fetch_logfile'] = f"{os.getcwd()}/fetch.log"
+    conf['logging']['switch_logfile'] = f"{os.getcwd()}/switch.log"
 
     # Validate new configuration just to be sure
     conf_check = config.ProgramConfig.check_config(conf)
