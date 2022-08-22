@@ -27,8 +27,8 @@ class AtQueueMember():
         fields = queue_member_str.split()
         self.id = int(fields[0])
         self.dt = util.system_time_to_utc(
-                datetime.strptime(
-                    " ".join(fields[1:6]), "%a %b %d %H:%M:%S %Y"))
+            datetime.strptime(
+                " ".join(fields[1:6]), "%a %b %d %H:%M:%S %Y"))
         self.queue = fields[6]
 
 

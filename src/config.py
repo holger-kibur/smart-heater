@@ -54,6 +54,7 @@ CONFIG_REQ_KEYS = {
 
 CONFIG_FOLDER = f"/home/{os.getenv('USER')}/.config/smart-heater/"
 
+
 class ProgramConfig():
     """
     Convenient access to a full program configuration.
@@ -213,4 +214,3 @@ class ProgramConfig():
             self['environment']['script_dir'],
             self.source_file,
             action)
-

@@ -46,4 +46,5 @@ if __name__ == "__main__":
     GPIO.setup(out_pin, GPIO.OUT)
     GPIO.output(out_pin, pin_state)
 
-    log.LoggerFactory.get_logger('SWITCH').info(f'Heating switched {args.action[0]} (pin {pin_state})!')
+    log.LoggerFactory.get_logger('SWITCH').info(
+        f'Heating switched {args.action[0]} (pin {pin_state})!')
