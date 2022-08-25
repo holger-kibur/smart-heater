@@ -17,21 +17,21 @@ def test_fetch(fix_config, fix_empty_at_queue):
     that there are an even amount of them.
     """
 
-    print('Using queue', fix_empty_at_queue)
+    print("Using queue", fix_empty_at_queue)
 
-    fetch = importlib.import_module('src.fetch')
+    fetch = importlib.import_module("src.fetch")
 
     # Configure test so it interferes as little as possible
-    fix_config['environment']['at_queue'] = fix_empty_at_queue
+    fix_config["environment"]["at_queue"] = fix_empty_at_queue
 
     fetch.do_fetch(prog_config=fix_config)
 
     # Inspect at queue to see if commands were entered correctly
-    at_queue = io.BytesIO(subprocess.check_output(['at', '-l']))
+    at_queue = io.BytesIO(subprocess.check_output(["at", "-l"]))
 
     num_in_queue = 0
     for sched_cmd in at_queue:
-        if sched_cmd.split()[6].decode('UTF-8') == fix_empty_at_queue:
+        if sched_cmd.split()[6].decode("UTF-8") == fix_empty_at_queue:
             num_in_queue += 1
 
     assert num_in_queue >= 0, "Fetch didn't put any commands in at queue!"

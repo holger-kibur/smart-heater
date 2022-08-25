@@ -15,7 +15,7 @@ from . import log, util, manage
 logger = log.LoggerFactory.get_logger("SCHEDULE")
 
 
-class ScheduleBuilder():
+class ScheduleBuilder:
     """
     A stateful class for building a schedule from heating time-slices.
 
@@ -30,7 +30,7 @@ class ScheduleBuilder():
     relays, for example.
     """
 
-    SwitchEvent = TypeVar('SwitchEvent')
+    SwitchEvent = TypeVar("SwitchEvent")
     ON_EVENT = 0
     OFF_EVENT = 1
 
@@ -59,26 +59,27 @@ class ScheduleBuilder():
                 if event_type == self.ON_EVENT:
                     self.sched[i] = (
                         self.ON_EVENT,
-                        self.sched[i][1] - datetime.timedelta(minutes=num_mins))
+                        self.sched[i][1] - datetime.timedelta(minutes=num_mins),
+                    )
                     break
                 # If this time slice comes directly before an OFF event,
                 # then we have a duplicate entry.
-                raise Exception(
-                    "Duplicate entry in scheduler: slice comes before OFF!")
+                raise Exception("Duplicate entry in scheduler: slice comes before OFF!")
             if util.hours_contiguous(event_time, util.plus_hour(start_time)):
                 if event_type == self.OFF_EVENT:
                     self.sched[i] = (
                         self.OFF_EVENT,
-                        self.sched[i][1] + datetime.timedelta(minutes=num_mins))
+                        self.sched[i][1] + datetime.timedelta(minutes=num_mins),
+                    )
                     break
                 # If this time slice comes directly after an ON event, then
                 # we also have a duplicate entry.
-                raise Exception(
-                    "Duplicate entry in scheduler: slice comes after ON!")
+                raise Exception("Duplicate entry in scheduler: slice comes after ON!")
         else:
             self.sched.append((self.ON_EVENT, start_time))
-            self.sched.append((self.OFF_EVENT, start_time +
-                              datetime.timedelta(minutes=num_mins)))
+            self.sched.append(
+                (self.OFF_EVENT, start_time + datetime.timedelta(minutes=num_mins))
+            )
 
     def display_schedule(self):
         """
@@ -87,16 +88,18 @@ class ScheduleBuilder():
 
         logger.info("-" * 69)
         logger.info(
-            "| EVENT |    MARKET TIME    |     UTC TIME      |    SYSTEM TIME    |")
+            "| EVENT |    MARKET TIME    |     UTC TIME      |    SYSTEM TIME    |"
+        )
         for (event_type, event_time) in self.sched:
             utc_time = util.market_time_to_utc(event_time)
             sys_time = util.utc_to_system_time(utc_time)
-            logger.info("|  %s  | %s | %s | %s |",
-                        "ON " if event_type == self.ON_EVENT else "OFF",
-                        util.pretty_datetime(event_time),
-                        util.pretty_datetime(utc_time),
-                        util.pretty_datetime(sys_time),
-                        )
+            logger.info(
+                "|  %s  | %s | %s | %s |",
+                "ON " if event_type == self.ON_EVENT else "OFF",
+                util.pretty_datetime(event_time),
+                util.pretty_datetime(utc_time),
+                util.pretty_datetime(sys_time),
+            )
         logger.info("-" * 69)
 
     def get_sched_day_start_utc(self) -> datetime.datetime:
@@ -107,13 +110,13 @@ class ScheduleBuilder():
         """
 
         if len(self.sched) == 0:
-            raise Exception(
-                "Can't get schedule day start with an empty schedule!")
+            raise Exception("Can't get schedule day start with an empty schedule!")
         tmrw_first_time = self.sched[0][1]
         tmrw_midnight = datetime.datetime(
             year=tmrw_first_time.year,
             month=tmrw_first_time.month,
-            day=tmrw_first_time.day)
+            day=tmrw_first_time.day,
+        )
         return util.market_time_to_utc(tmrw_midnight)
 
     def upload(self, prog_config):
@@ -141,12 +144,13 @@ class ScheduleBuilder():
 
         # Clear any switches scheduled for the same day
         manage.AtWrapper.clear_queue_from(
-            prog_config['environment']['switch_queue'],
-            self.get_sched_day_start_utc())
+            prog_config["environment"]["switch_queue"], self.get_sched_day_start_utc()
+        )
 
         # Upload switches
         for (event_type, event_time) in self.sched:
             manage.AtWrapper.add_switch_command(
                 prog_config,
-                'ON' if event_type == self.ON_EVENT else 'OFF',
-                util.market_time_to_utc(event_time))
+                "ON" if event_type == self.ON_EVENT else "OFF",
+                util.market_time_to_utc(event_time),
+            )

@@ -13,10 +13,10 @@ import toml
 
 from src import config, util, manage
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
-class PromptCollection():
+class PromptCollection:
     """
     Utility class for using language information from the language TOML data
     file.
@@ -69,7 +69,7 @@ class PromptCollection():
 
         @return Language-specific greeting.
         """
-        return cls._toplevel('greeting')
+        return cls._toplevel("greeting")
 
     @classmethod
     def amend(cls) -> str:
@@ -78,14 +78,15 @@ class PromptCollection():
 
         @return Language-specific amend prompt.
         """
-        return cls._toplevel('amend')
+        return cls._toplevel("amend")
 
     def __init__(self, section: str):
         if self.GLOB_LANGFILE is not None and self.GLOB_LANG is not None:
             self.root = self.GLOB_LANGFILE[section]
         else:
             util.exit_critical_bare(
-                "Tried to instantiate PromptCollection before the class was configured!")
+                "Tried to instantiate PromptCollection before the class was configured!"
+            )
 
     def prompt(self) -> str:
         """
@@ -93,7 +94,7 @@ class PromptCollection():
 
         @return Section prompt.
         """
-        return self.root['prompt'][self.GLOB_LANG]
+        return self.root["prompt"][self.GLOB_LANG]
 
     def try_again(self, subkey: Optional[str] = None) -> str:
         """
@@ -101,7 +102,7 @@ class PromptCollection():
 
         @return Section try again message.
         """
-        return self.invalid(subkey) + self._toplevel('try_again')
+        return self.invalid(subkey) + self._toplevel("try_again")
 
     def invalid(self, subkey: Optional[str] = None) -> str:
         """
@@ -109,7 +110,7 @@ class PromptCollection():
 
         @return Section invalid message.
         """
-        pre = self.root['invalid']
+        pre = self.root["invalid"]
         if subkey is not None:
             pre = pre[subkey]
         return pre[self.GLOB_LANG]
@@ -120,7 +121,7 @@ class PromptCollection():
 
         @return Section label.
         """
-        return self.root['label'][self.GLOB_LANG]
+        return self.root["label"][self.GLOB_LANG]
 
     def __getitem__(self, key):
         return self.root[key][self.GLOB_LANG]
@@ -148,9 +149,9 @@ def get_yes_no(prompt: str) -> bool:
     @return User response (True is a positive response).
     """
 
-    pc = PromptCollection('yesno')
-    yes = pc['yes']
-    no = pc['no']
+    pc = PromptCollection("yesno")
+    yes = pc["yes"]
+    no = pc["no"]
     while True:
         ans = input(f"{prompt} ({yes}/{no}): ")
         if ans.lower() not in (yes, no):
@@ -170,15 +171,15 @@ def check_python_cmd_valid(python_cmd: str) -> tuple[bool, Optional[str]]:
     @return Validity (0th) and optional reason (1st) in case it isn't.
     """
     try:
-        version_raw = subprocess.check_output([python_cmd, '-V'])
+        version_raw = subprocess.check_output([python_cmd, "-V"])
     except FileNotFoundError:
-        return (False, 'no_exist')
-    version = version_raw.decode('UTF-8')
+        return (False, "no_exist")
+    version = version_raw.decode("UTF-8")
     if version.split()[0] != "Python":
-        return (False, 'not_python')
-    vsplit = version.split()[1].split('.')
+        return (False, "not_python")
+    vsplit = version.split()[1].split(".")
     if vsplit[0] != "3" or int(vsplit[1]) < 7:
-        return (False, 'version')
+        return (False, "version")
     return (True, None)
 
 
@@ -188,10 +189,10 @@ def get_user_weekday_minutes() -> dict:
 
     @return Heating ninutes per weekday mapping.
     """
-    pc = PromptCollection('weekdays')
+    pc = PromptCollection("weekdays")
     weekdays = {}
     print(pc.prompt())
-    for i, day in enumerate(pc['daylist']):
+    for i, day in enumerate(pc["daylist"]):
         while True:
             day_in = get_input(day)
             try:
@@ -210,7 +211,7 @@ def get_user_region_code() -> str:
 
     @return Uppercase Nordpool-conforming region.
     """
-    pc = PromptCollection('region_code')
+    pc = PromptCollection("region_code")
     region_code = ""
     while True:
         region_code = get_input(pc.prompt())
@@ -228,7 +229,7 @@ def get_user_python_cmd() -> str:
 
     @return The executable path/command
     """
-    pc = PromptCollection('python_cmd')
+    pc = PromptCollection("python_cmd")
     python_cmd = ""
     while True:
         python_cmd = get_input(pc.prompt())
@@ -245,7 +246,7 @@ def get_user_relay_gpio() -> int:
 
     @return The BCM mode GPIO number.
     """
-    pc = PromptCollection('gpio')
+    pc = PromptCollection("gpio")
     while True:
         gpio_pin_raw = get_input(pc.prompt())
         try:
@@ -262,7 +263,7 @@ def get_user_polarity() -> bool:
 
     @return True == reverse, False == normal.
     """
-    pc = PromptCollection('gpio_reverse')
+    pc = PromptCollection("gpio_reverse")
     return get_yes_no(pc.prompt())
 
 
@@ -278,34 +279,37 @@ def create_new_conf() -> config.ProgramConfig:
     """
 
     conf = {
-        'fetch': {},
-        'environment': {},
-        'hardware': {},
-        'logging': {},
+        "fetch": {},
+        "environment": {},
+        "hardware": {},
+        "logging": {},
     }
 
-    conf['heating-schedule'] = get_user_weekday_minutes()
-    conf['fetch']['url'] = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=,,,EUR"
-    conf['fetch']['region_code'] = get_user_region_code()
+    conf["heating-schedule"] = get_user_weekday_minutes()
+    conf["fetch"][
+        "url"
+    ] = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=,,,EUR"
+    conf["fetch"]["region_code"] = get_user_region_code()
 
     if sys.version_info.major == 3 and sys.version_info.minor >= 7:
-        conf['environment']['python'] = os.path.realpath(sys.executable)
+        conf["environment"]["python"] = os.path.realpath(sys.executable)
     else:
-        print(PromptCollection('python_cmd')['auto_fail'])
-        conf['environment']['python'] = get_user_python_cmd()
+        print(PromptCollection("python_cmd")["auto_fail"])
+        conf["environment"]["python"] = get_user_python_cmd()
 
-    conf['environment']['switch_queue'] = 's'
-    conf['environment']['script_dir'] = os.getcwd()
-    conf['hardware']['switch_pin'] = get_user_relay_gpio()
-    conf['hardware']['reverse_polarity'] = get_user_polarity()
-    conf['logging']['fetch_logfile'] = f"{os.getcwd()}/fetch.log"
-    conf['logging']['switch_logfile'] = f"{os.getcwd()}/switch.log"
+    conf["environment"]["switch_queue"] = "s"
+    conf["environment"]["script_dir"] = os.getcwd()
+    conf["hardware"]["switch_pin"] = get_user_relay_gpio()
+    conf["hardware"]["reverse_polarity"] = get_user_polarity()
+    conf["logging"]["fetch_logfile"] = f"{os.getcwd()}/fetch.log"
+    conf["logging"]["switch_logfile"] = f"{os.getcwd()}/switch.log"
 
     # Validate new configuration just to be sure
     conf_check = config.ProgramConfig.check_config(conf)
     if not conf_check[0]:
         util.exit_critical_bare(
-            f"Something wen't wrong with the configuration! Try again!\nReason: {conf_check[1]}")
+            f"Something wen't wrong with the configuration! Try again!\nReason: {conf_check[1]}"
+        )
 
     return config.ProgramConfig(conf, config.CONFIG_FOLDER + "default_config.toml")
 
@@ -343,28 +347,30 @@ def amend_existing_conf(conf: config.ProgramConfig):
     @param conf The ProgramConfig instance to-be-amended.
     """
 
-    temp = user_amend_field('weekdays', get_user_weekday_minutes)
+    temp = user_amend_field("weekdays", get_user_weekday_minutes)
     if temp is not None:
-        conf['heating-schedule'] = temp
+        conf["heating-schedule"] = temp
 
-    temp = user_amend_field('region_code', get_user_region_code)
+    temp = user_amend_field("region_code", get_user_region_code)
     if temp is not None:
-        conf['fetch']['region_code'] = temp
+        conf["fetch"]["region_code"] = temp
 
-    temp = user_amend_field('gpio', get_user_relay_gpio)
+    temp = user_amend_field("gpio", get_user_relay_gpio)
     if temp is not None:
-        conf['hardware']['switch_pin'] = temp
+        conf["hardware"]["switch_pin"] = temp
 
-    temp = user_amend_field('gpio_reverse', get_user_polarity)
+    temp = user_amend_field("gpio_reverse", get_user_polarity)
     if temp is not None:
-        conf['hardware']['reverse_polarity'] = temp
+        conf["hardware"]["reverse_polarity"] = temp
 
     # Validate amended configuration just to be sure
     conf_check = config.ProgramConfig.check_config(conf.config_tree)
     if not conf_check[0]:
         util.exit_critical_bare(
-            "Something wen't wrong with amending the configuration! Try again!\nReason: {}"
-            .format(conf_check[1]))
+            "Something wen't wrong with amending the configuration! Try again!\nReason: {}".format(
+                conf_check[1]
+            )
+        )
 
 
 def get_user_language(langfile: dict) -> str:
@@ -378,17 +384,17 @@ def get_user_language(langfile: dict) -> str:
     """
 
     while True:
-        for i, lang_option in enumerate(langfile['lang_choices'].values()):
+        for i, lang_option in enumerate(langfile["lang_choices"].values()):
             print(f"{i + 1}. {lang_option}")
         selection = get_input("Select langauge option")
 
         try:
             select_int = int(selection)
-            return list(langfile['lang_choices'].keys())[select_int - 1]
+            return list(langfile["lang_choices"].keys())[select_int - 1]
         except ValueError:
             pass
 
-        for lang_key, lang_option in langfile['lang_choices'].items():
+        for lang_key, lang_option in langfile["lang_choices"].items():
             if selection.lower() == lang_option.lower():
                 return lang_key
 
@@ -405,17 +411,17 @@ def user_save_file(conf: config.ProgramConfig):
     @param conf The configuration to-be-saved.
     """
 
-    pc = PromptCollection('save_config')
+    pc = PromptCollection("save_config")
     newpath = get_input(pc.prompt())
 
     if not newpath:
         # User chose to reuse previous path or default
         newpath = conf.source_file
     elif not os.path.isabs(newpath):
-        newpath = config.CONFIG_FOLDER + newpath + '.toml'
+        newpath = config.CONFIG_FOLDER + newpath + ".toml"
 
     os.makedirs(os.path.dirname(newpath), exist_ok=True)
-    with open(newpath, 'w', encoding='UTF-8') as conf_file:
+    with open(newpath, "w", encoding="UTF-8") as conf_file:
         toml.dump(conf.config_tree, conf_file)
     conf.source_file = newpath
 
@@ -437,7 +443,7 @@ def do_setup(args: argparse.Namespace):
     print(PromptCollection.greeting())
     if args.configfile:
         conf = config.ProgramConfig.from_file(args.configfile[0])
-        old_switch_queue = conf['environment']['switch_queue']
+        old_switch_queue = conf["environment"]["switch_queue"]
         amend_existing_conf(conf)
     else:
         conf = create_new_conf()
@@ -454,19 +460,24 @@ def do_setup(args: argparse.Namespace):
     at = manage.AtWrapper
     if old_switch_queue is not None:
         with at.queue_pidfile():
-            for i, sched_switch in enumerate(at.queue_filter(
-                    at.get_at_queue_members(),
-                    old_switch_queue)):
+            for i, sched_switch in enumerate(
+                at.queue_filter(at.get_at_queue_members(), old_switch_queue)
+            ):
                 at.remove_member(sched_switch)
                 at.add_switch_command(
-                    conf, 'OFF' if i % 2 == 0 else 'ON',
-                    sched_switch.dt)
+                    conf, "OFF" if i % 2 == 0 else "ON", sched_switch.dt
+                )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--configfile', nargs=1, default=None,
-                        help="Configration file path to amend.")
+    parser.add_argument(
+        "-c",
+        "--configfile",
+        nargs=1,
+        default=None,
+        help="Configration file path to amend.",
+    )
     passed_args = parser.parse_args()
 
     do_setup(passed_args)

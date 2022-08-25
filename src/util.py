@@ -54,7 +54,7 @@ def utc_to_market_time(utc_time: datetime) -> datetime:
     Convert a time in the market's timezone to the equivalent time in UTC.
     """
 
-    return pytz.timezone('Etc/UTC').localize(utc_time).astimezone(MARKET_TIMEZONE)
+    return pytz.timezone("Etc/UTC").localize(utc_time).astimezone(MARKET_TIMEZONE)
 
 
 def utc_to_system_time(utc_datetime: datetime) -> datetime:
@@ -121,5 +121,6 @@ def next_market_day_start() -> datetime:
     """
 
     market_now = utc_to_market_time(system_time_to_utc(datetime.now()))
-    return datetime(year=market_now.year, month=market_now.month, day=market_now.day)\
-        + timedelta(days=1)
+    return datetime(
+        year=market_now.year, month=market_now.month, day=market_now.day
+    ) + timedelta(days=1)

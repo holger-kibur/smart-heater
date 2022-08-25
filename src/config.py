@@ -16,46 +16,65 @@ import toml
 from . import util
 
 ACCEPTABLE_REGION_NAMES = [
-    'SYS', 'SE1', 'SE2', 'SE3', 'SE4', 'FI', 'DK1', 'DK2', 'OSLO', 'KR.SAND',
-    'BERGEN', 'MOLDE', 'TR.HEIM', 'TROMSE', 'EE', 'LV', 'LT', 'AT', 'BE',
-    'DE-LU', 'FR', 'NL',
+    "SYS",
+    "SE1",
+    "SE2",
+    "SE3",
+    "SE4",
+    "FI",
+    "DK1",
+    "DK2",
+    "OSLO",
+    "KR.SAND",
+    "BERGEN",
+    "MOLDE",
+    "TR.HEIM",
+    "TROMSE",
+    "EE",
+    "LV",
+    "LT",
+    "AT",
+    "BE",
+    "DE-LU",
+    "FR",
+    "NL",
 ]
 
 WEEKDAY_KEYS = [
-    'monday',
-    'tuesday',
-    'wednesday',
-    'thursday',
-    'friday',
-    'saturday',
-    'sunday',
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
 ]
 
 CONFIG_REQ_KEYS = {
-    'heating-schedule': WEEKDAY_KEYS,
-    'fetch': [
-        'url',
-        'region_code',
+    "heating-schedule": WEEKDAY_KEYS,
+    "fetch": [
+        "url",
+        "region_code",
     ],
-    'environment': [
-        'python',
-        'script_dir',
-        'switch_queue',
+    "environment": [
+        "python",
+        "script_dir",
+        "switch_queue",
     ],
-    'hardware': [
-        'switch_pin',
-        'reverse_polarity',
+    "hardware": [
+        "switch_pin",
+        "reverse_polarity",
     ],
-    'logging': [
-        'fetch_logfile',
-        'switch_logfile',
+    "logging": [
+        "fetch_logfile",
+        "switch_logfile",
     ],
 }
 
 CONFIG_FOLDER = f"/home/{os.getenv('USER')}/.config/smart-heater/"
 
 
-class ProgramConfig():
+class ProgramConfig:
     """
     Convenient access to a full program configuration.
 
@@ -71,9 +90,8 @@ class ProgramConfig():
 
     @classmethod
     def check_config_keys(
-            cls,
-            req_subtree: Union[dict, list],
-            config_subtree: dict) -> tuple[bool, Optional[str]]:
+        cls, req_subtree: Union[dict, list], config_subtree: dict
+    ) -> tuple[bool, Optional[str]]:
         """
         Recursive function to ensure that a parsed configuration file contains
         all the required keys.
@@ -95,8 +113,7 @@ class ProgramConfig():
         elif isinstance(req_subtree, dict):
             for (key, subtree) in req_subtree.items():
                 if key in config_subtree.keys():
-                    downtree = cls.check_config_keys(
-                        subtree, config_subtree[key])
+                    downtree = cls.check_config_keys(subtree, config_subtree[key])
                     if not downtree[0]:
                         return downtree
                 else:
@@ -132,9 +149,12 @@ class ProgramConfig():
 
         key_check_res = cls.check_config_keys(CONFIG_REQ_KEYS, unchecked)
         if not key_check_res[0]:
-            return (False, f"Configuration file is missing required key: {key_check_res[1]}!")
+            return (
+                False,
+                f"Configuration file is missing required key: {key_check_res[1]}!",
+            )
 
-        if not cls.check_config_region(unchecked['fetch']['region_code']):
+        if not cls.check_config_region(unchecked["fetch"]["region_code"]):
             return (False, "Configuration region is not one of the available ones!")
 
         return (True, None)
@@ -159,13 +179,13 @@ class ProgramConfig():
         except FileNotFoundError:
             util.exit_critical_bare("Couldm't find configuration file!")
 
-        check_res = cls.check_config(from_file)
-        if not check_res[0]:
-            util.exit_critical_bare(check_res[1])
-
         return cls(from_file, filepath)
 
     def __init__(self, config_tree, source_file):
+        check_res = self.check_config(config_tree)
+        if not check_res[0]:
+            util.exit_critical_bare(check_res[1])
+
         self.config_tree = config_tree
         self.source_file = source_file
 
@@ -174,6 +194,30 @@ class ProgramConfig():
 
     def __setitem__(self, key, val):
         self.config_tree[key] = val
+
+    def __eq__(self, other):
+        def recurse(subtree_a, subtree_b):
+            if type(subtree_a) is not type(subtree_b):
+                return False
+            if isinstance(subtree_a, list):
+                return len(subtree_a) != len(subtree_b) or any(
+                    [recurse(subtree_a[i], subtree_b[i]) for i in range(len(subtree_a))]
+                )
+            elif isinstance(subtree_b, dict):
+                return (
+                    len(subtree_a.keys()) != len(subtree_b.keys())
+                    or any([key not in subtree_b.keys() for key in subtree_a.keys()])
+                    or any(
+                        [
+                            recurse(subtree_a[key], subtree_b[key])
+                            for key in subtree_a.keys()
+                        ]
+                    )
+                )
+            else:
+                return subtree_a == subtree_b
+
+        return recurse(self.config_tree, other.config_tree)
 
     def get_heating_minutes(self, date: datetime) -> int:
         """
@@ -195,9 +239,10 @@ class ProgramConfig():
         """
 
         return "{} {}/fetch.py -c {}".format(
-            self['environment']['python'],
-            self['environment']['script_dir'],
-            self.source_file)
+            self["environment"]["python"],
+            self["environment"]["script_dir"],
+            self.source_file,
+        )
 
     def gen_switch_command(self, action) -> str:
         """
@@ -210,7 +255,8 @@ class ProgramConfig():
         """
 
         return "{} {}/switch.py -c {} -a {}".format(
-            self['environment']['python'],
-            self['environment']['script_dir'],
+            self["environment"]["python"],
+            self["environment"]["script_dir"],
             self.source_file,
-            action)
+            action,
+        )

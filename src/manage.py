@@ -14,10 +14,10 @@ import crontab
 
 from src import util, config
 
-FETCH_CRON_COMMENT = 'smart-heater-fetch'
+FETCH_CRON_COMMENT = "smart-heater-fetch"
 
 
-class AtQueueMember():
+class AtQueueMember:
     """
     Utility class for representing scheduled jobs in the 'at' daemon queue.
     This class only parses and stores fields necessary for program function.
@@ -27,12 +27,12 @@ class AtQueueMember():
         fields = queue_member_str.split()
         self.id = int(fields[0])
         self.dt = util.system_time_to_utc(
-            datetime.strptime(
-                " ".join(fields[1:6]), "%a %b %d %H:%M:%S %Y"))
+            datetime.strptime(" ".join(fields[1:6]), "%a %b %d %H:%M:%S %Y")
+        )
         self.queue = fields[6]
 
 
-class AtWrapper():
+class AtWrapper:
     """
     Namespacing class for encapsulating interactions with the 'at' daemon.
     """
@@ -51,11 +51,8 @@ class AtWrapper():
 
         systime = util.utc_to_system_time(time)
         return "{:0>4}{:0>2}{:0>2}{:0>2}{:0>2}".format(
-            systime.year,
-            systime.month,
-            systime.day,
-            systime.hour,
-            systime.minute)
+            systime.year, systime.month, systime.day, systime.hour, systime.minute
+        )
 
     @staticmethod
     def get_at_queue_members() -> list[AtQueueMember]:
@@ -65,10 +62,10 @@ class AtWrapper():
         @return Unsorted and unfiltered list of all members.
         """
 
-        at_queue = io.BytesIO(subprocess.check_output(['at', '-l']))
+        at_queue = io.BytesIO(subprocess.check_output(["at", "-l"]))
         queue_list = []
         for member_line in at_queue:
-            queue_list.append(AtQueueMember(member_line.decode('UTF-8')))
+            queue_list.append(AtQueueMember(member_line.decode("UTF-8")))
         return queue_list
 
     @classmethod
@@ -87,10 +84,12 @@ class AtWrapper():
         members = cls.get_at_queue_members()
         for mem in cls.queue_filter(members, queue):
             if mem.dt >= dt:
-                subprocess.call(['atrm', str(mem.id)])
+                subprocess.call(["atrm", str(mem.id)])
 
     @classmethod
-    def add_switch_command(cls, prog_config: config.ProgramConfig, action: str, dt: datetime):
+    def add_switch_command(
+        cls, prog_config: config.ProgramConfig, action: str, dt: datetime
+    ):
         """
         Generate a new switch command and add it to the 'at' daemon queue.
 
@@ -103,7 +102,8 @@ class AtWrapper():
         cls.schedule_member(
             prog_config.gen_switch_command(action),
             dt,
-            prog_config['environment']['switch_queue'])
+            prog_config["environment"]["switch_queue"],
+        )
 
     @staticmethod
     def queue_pidfile() -> pid.PidFile:
@@ -113,13 +113,13 @@ class AtWrapper():
         @return Pidfile handle.
         """
 
-        uid = subprocess.check_output(['id', '-u']).decode('UTF-8').strip()
+        uid = subprocess.check_output(["id", "-u"]).decode("UTF-8").strip()
         return pid.PidFile(f"/var/run/user/{uid}/smart-heater.lock")
 
     @staticmethod
     def queue_filter(
-            member_list: list[AtQueueMember],
-            queue: str) -> Generator[AtQueueMember, None, None]:
+        member_list: list[AtQueueMember], queue: str
+    ) -> Generator[AtQueueMember, None, None]:
         """
         Filter a list of 'at' daemmon members by queue.
 
@@ -142,7 +142,7 @@ class AtWrapper():
         @param member The member whose id is used to remove from queue.
         """
 
-        subprocess.call(['atrm', str(member.id)])
+        subprocess.call(["atrm", str(member.id)])
 
     @classmethod
     def schedule_member(cls, command: str, dt: datetime, queue: str):
@@ -155,11 +155,11 @@ class AtWrapper():
         @param queue Queue to schedule command in.
         """
 
-        wrapped_cmd = f"echo \"{command}\" | at -q {queue} -t {cls.datetime_to_at(dt)}"
+        wrapped_cmd = f'echo "{command}" | at -q {queue} -t {cls.datetime_to_at(dt)}'
         subprocess.call(wrapped_cmd, shell=True)
 
 
-class CronWrapper():
+class CronWrapper:
     """
     Namespacing class for encapsulating interaction with the crontab daemon,
     """
@@ -189,11 +189,12 @@ class CronWrapper():
 
         with crontab.CronTab(user=True) as cron:
             fetch_job = cron.new(
-                command=prog_config.gen_fetch_command(),
-                comment=FETCH_CRON_COMMENT)
+                command=prog_config.gen_fetch_command(), comment=FETCH_CRON_COMMENT
+            )
 
             # Run at 21:30 every day
-            utc_21_30 = util.market_time_to_utc(datetime(
-                year=1970, month=1, day=1, hour=21, minute=30, second=0))
+            utc_21_30 = util.market_time_to_utc(
+                datetime(year=1970, month=1, day=1, hour=21, minute=30, second=0)
+            )
             sys_21_30 = util.utc_to_system_time(utc_21_30)
-            fetch_job.setall(f'{sys_21_30.minute} {sys_21_30.hour} * * *')
+            fetch_job.setall(f"{sys_21_30.minute} {sys_21_30.hour} * * *")

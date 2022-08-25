@@ -23,7 +23,9 @@ def verify_environment():
 
     # Verify that it's a raspberry pi
     try:
-        with open("/sys/firmware/devicetree/base/model", "r", encoding="utf-8") as model_file:
+        with open(
+            "/sys/firmware/devicetree/base/model", "r", encoding="utf-8"
+        ) as model_file:
             if "raspberry pi" not in model_file.read().lower():
                 return (False, "Needs to be running on a Raspberry PI!")
     except FileNotFoundError:

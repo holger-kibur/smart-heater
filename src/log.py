@@ -8,7 +8,7 @@ import sys
 from . import util
 
 
-class LoggerFactory():
+class LoggerFactory:
     """
     Factory class for logger instances that will be each be configured
     accoriding to a preliminary factory configuration.
@@ -45,7 +45,7 @@ class LoggerFactory():
         All future logger instances will print nothing to files.
         """
 
-        cls.logfile = 'TEST_LOGFILE'
+        cls.logfile = "TEST_LOGFILE"
         cls.testing = True
 
     @classmethod
@@ -59,7 +59,8 @@ class LoggerFactory():
 
         if cls.logfile is None:
             util.exit_critical_bare(
-                "LoggerFactory not configured with logfile prior to usage!")
+                "LoggerFactory not configured with logfile prior to usage!"
+            )
 
         logger = logging.getLogger(prefix)
         logger.setLevel(logging.DEBUG if cls.debug else logging.INFO)
@@ -72,7 +73,8 @@ class LoggerFactory():
         logfile_handler.setLevel(logging.DEBUG)
 
         logfile_format = logging.Formatter(
-            "%(name)s -> %(levelname)s - %(asctime)s: %(message)s")
+            "%(name)s -> %(levelname)s - %(asctime)s: %(message)s"
+        )
         logfile_handler.setFormatter(logfile_format)
 
         if cls.verbose:
