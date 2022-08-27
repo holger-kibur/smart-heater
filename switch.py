@@ -5,27 +5,10 @@ Command line entry point for switching program.
 import argparse
 import importlib
 
-from src import log, verify_env, util, config
+from src import log, verify_env, util, config, manage
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-a",
-        "--action",
-        nargs=1,
-        required=True,
-        choices=["ON", "OFF"],
-        help="Switching action to perform.",
-    )
-    parser.add_argument(
-        "-c",
-        "--configfile",
-        nargs=1,
-        required=True,
-        help="Required configuration file path.",
-    )
-    args = parser.parse_args()
 
+def main(args):
     verify_result = verify_env.verify_environment()
     if not verify_result[0]:
         util.exit_critical_bare(f"Environment not suitable: {verify_result[1]}")
@@ -58,3 +41,36 @@ if __name__ == "__main__":
     log.LoggerFactory.get_logger("SWITCH").info(
         f"Heating switched {args.action[0]} (pin {pin_state})!"
     )
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-a",
+        "--action",
+        nargs=1,
+        required=True,
+        choices=["ON", "OFF"],
+        help="Switching action to perform.",
+    )
+    parser.add_argument(
+        "-c",
+        "--configfile",
+        nargs=1,
+        required=True,
+        help="Required configuration file path.",
+    )
+    parser.add_argument(
+        "--_test_pidfile",
+        nargs=1,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    parsed_args = parser.parse_args()
+
+    if parsed_args._test_pidfile:
+        pid_handle = manage.script_pidfile(parsed_args._test_pidfile[0])
+    else:
+        pid_handle = manage.script_pidfile()
+    with pid_handle:
+        main(parsed_args)

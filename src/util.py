@@ -124,3 +124,10 @@ def next_market_day_start() -> datetime:
     return datetime(
         year=market_now.year, month=market_now.month, day=market_now.day
     ) + timedelta(days=1)
+
+
+def get_21_30_market_as_sys() -> datetime:
+    utc_21_30 = market_time_to_utc(
+        datetime(year=1970, month=1, day=1, hour=21, minute=30, second=0)
+    )
+    return utc_to_system_time(utc_21_30)

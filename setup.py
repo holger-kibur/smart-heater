@@ -426,7 +426,7 @@ def user_save_file(conf: config.ProgramConfig):
     conf.source_file = newpath
 
 
-def do_setup(args: argparse.Namespace):
+def main(args: argparse.Namespace):
     """
     Main function for setup logic.
 
@@ -451,15 +451,19 @@ def do_setup(args: argparse.Namespace):
     user_save_file(conf)
 
     # (Re)set fetch cronjob
-    manage.CronWrapper.clear_fetch_cronjob()
-    manage.CronWrapper.add_fetch_cronjob(conf)
+    if args._test_comment:
+        manage.CronWrapper.clear_fetch_cronjob(args._test_comment[0])
+        manage.CronWrapper.add_fetch_cronjob(conf, args._test_comment[0])
+    else:
+        manage.CronWrapper.clear_fetch_cronjob()
+        manage.CronWrapper.add_fetch_cronjob(conf)
 
     # (Re)set switch atjobs
     # Scheduled times for already queued will not change, but their
     # configuration filepaths will.
     at = manage.AtWrapper
     if old_switch_queue is not None:
-        with at.queue_pidfile():
+        with manage.script_pidfile():
             for i, sched_switch in enumerate(
                 at.queue_filter(at.get_at_queue_members(), old_switch_queue)
             ):
@@ -478,6 +482,23 @@ if __name__ == "__main__":
         default=None,
         help="Configration file path to amend.",
     )
-    passed_args = parser.parse_args()
+    parser.add_argument(
+        "--_test_comment",
+        nargs=1,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--_test_pidfile",
+        nargs=1,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    parsed_args = parser.parse_args()
 
-    do_setup(passed_args)
+    if parsed_args._test_pidfile:
+        pid_handle = manage.script_pidfile(parsed_args._test_pidfile[0])
+    else:
+        pid_handle = manage.script_pidfile()
+    with pid_handle:
+        main(parsed_args)

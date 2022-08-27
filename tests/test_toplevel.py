@@ -2,10 +2,13 @@ import sys
 import os
 import subprocess
 import pytest
+import crontab
 
-from src import config
+from src import config, manage, util
 
 TEST_CONF_CONFNAME = "/tmp/smart-heater-test-conf.toml"
+TEST_CRONJOB_COMMENT = "SMART_HEATER_TEST_JOB"
+TEST_PIDFILE_NAME = "SMART_HEATER_TEST"
 
 
 @pytest.fixture
@@ -46,8 +49,8 @@ def setup_newconf_conf() -> config.ProgramConfig:
         },
         "environment": {
             "python": "DUMMY_EXEC",
-            "switch_queue": "s",
-            "script_dir": "DUMY_PATH",
+            "switch_queue": "T",
+            "script_dir": "DUMMY_PATH",
         },
         "hardware": {
             "switch_pin": 1,
@@ -64,22 +67,44 @@ def setup_newconf_conf() -> config.ProgramConfig:
     return config.ProgramConfig(config_tree, "TEST_CONFIG")
 
 
-def test_setup(setup_newconf_input, setup_newconf_conf):
+def test_toplevel(setup_newconf_input, setup_newconf_conf):
     setup_inst = subprocess.Popen(
-        [sys.executable, f"{os.getcwd()}/setup.py"],
+        [
+            sys.executable,
+            f"{os.getcwd()}/setup.py",
+            "--_test_comment",
+            TEST_CRONJOB_COMMENT,
+            "--_test_pidfile",
+            TEST_PIDFILE_NAME,
+        ],
         stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
         encoding="UTF-8",
     )
-
     _, error = setup_inst.communicate(setup_newconf_input)
     assert not error
 
+    # Validate changes to filesystem
     assert os.path.exists(TEST_CONF_CONFNAME)
-
     loaded_conf = config.ProgramConfig.from_file(TEST_CONF_CONFNAME)
-    os.remove(TEST_CONF_CONFNAME)
-
     assert setup_newconf_conf == loaded_conf
+
+    # Validate changes to 'crontab' daemon.
+    with crontab.CronTab(user=True) as cron:
+        fetch_cronjobs = list(cron.find_comment(TEST_CRONJOB_COMMENT))
+        assert len(fetch_cronjobs) == 1
+        fetch_job = fetch_cronjobs[0]
+        sys_21_30 = util.get_21_30_market_as_sys()
+        assert fetch_job.minute == sys_21_30.minute
+        assert fetch_job.hour == sys_21_30.hour
+
+    # Run crontab fetch command
+    fetch_inst = subprocess.Popen(
+        [fetch_job.command, "--_test_pidfile", TEST_PIDFILE_NAME],
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="UTF-8",
+    )
+    _, error = fetch_inst.communicate()
+    assert not error

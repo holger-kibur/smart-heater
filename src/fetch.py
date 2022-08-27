@@ -74,7 +74,7 @@ def parse_hourly_prices(country, info_rows) -> list:
     return sorted(price_info, key=lambda x: x["price"])
 
 
-def do_fetch(prog_config):
+def do_fetch(prog_config, test_pricedata=None):
     """
     Do the fetch program logic using the give program configuration.
     """
@@ -85,7 +85,11 @@ def do_fetch(prog_config):
     table_rows = fetch_info(prog_config["fetch"]["url"])
 
     # Parse hourly prices
-    pricelist = parse_hourly_prices(prog_config["fetch"]["region_code"], table_rows)
+    pricelist = (
+        parse_hourly_prices(prog_config["fetch"]["region_code"], table_rows)
+        if not test_pricedata
+        else test_pricedata
+    )
 
     # Build schedule from prices
     sched_builder = cron.ScheduleBuilder()

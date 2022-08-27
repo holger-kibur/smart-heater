@@ -15,6 +15,8 @@ import crontab
 from src import util, config
 
 FETCH_CRON_COMMENT = "smart-heater-fetch"
+FETCH_CRON_TIME = date
+PIDFILE_NAME = "smart-heater"
 
 
 class AtQueueMember:
@@ -106,17 +108,6 @@ class AtWrapper:
         )
 
     @staticmethod
-    def queue_pidfile() -> pid.PidFile:
-        """
-        Create a pidfile lock for 'at' queue access.
-
-        @return Pidfile handle.
-        """
-
-        uid = subprocess.check_output(["id", "-u"]).decode("UTF-8").strip()
-        return pid.PidFile(f"/var/run/user/{uid}/smart-heater.lock")
-
-    @staticmethod
     def queue_filter(
         member_list: list[AtQueueMember], queue: str
     ) -> Generator[AtQueueMember, None, None]:
@@ -165,16 +156,18 @@ class CronWrapper:
     """
 
     @staticmethod
-    def clear_fetch_cronjob():
+    def clear_fetch_cronjob(comment=FETCH_CRON_COMMENT):
         """
         Remove existing fetch cronjob.
         """
 
         with crontab.CronTab(user=True) as cron:
-            cron.remove_all(comment=FETCH_CRON_COMMENT)
+            cron.remove_all(comment=comment)
 
     @staticmethod
-    def add_fetch_cronjob(prog_config: config.ProgramConfig):
+    def add_fetch_cronjob(
+        prog_config: config.ProgramConfig, comment=FETCH_CRON_COMMENT
+    ):
         """
         Add the fetch script to the cron daemon at 21:30 UTC.
 
@@ -189,12 +182,20 @@ class CronWrapper:
 
         with crontab.CronTab(user=True) as cron:
             fetch_job = cron.new(
-                command=prog_config.gen_fetch_command(), comment=FETCH_CRON_COMMENT
+                command=prog_config.gen_fetch_command(), comment=comment
             )
 
             # Run at 21:30 every day
-            utc_21_30 = util.market_time_to_utc(
-                datetime(year=1970, month=1, day=1, hour=21, minute=30, second=0)
-            )
-            sys_21_30 = util.utc_to_system_time(utc_21_30)
+            sys_21_30 = util.get_21_30_market_as_sys
             fetch_job.setall(f"{sys_21_30.minute} {sys_21_30.hour} * * *")
+
+
+def script_pidfile(filename=PIDFILE_NAME) -> pid.PidFile:
+    """
+    Create a pidfile lock for 'at' queue access.
+
+    @return Pidfile handle.
+    """
+
+    uid = subprocess.check_output(["id", "-u"]).decode("UTF-8").strip()
+    return pid.PidFile(f"/var/run/user/{uid}/{filename}.lock")
