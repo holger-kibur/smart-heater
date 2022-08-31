@@ -5,7 +5,6 @@ The daemons used are 'at' and 'crontab'.
 """
 from __future__ import annotations
 
-from collections.abc import Generator
 import subprocess
 import io
 from datetime import datetime
@@ -15,8 +14,12 @@ import crontab
 from src import util, config
 
 FETCH_CRON_COMMENT = "smart-heater-fetch"
-FETCH_CRON_TIME = date
 PIDFILE_NAME = "smart-heater"
+
+
+class EventType:
+    ON = 1
+    OFF = 0
 
 
 class AtQueueMember:
@@ -25,13 +28,46 @@ class AtQueueMember:
     This class only parses and stores fields necessary for program function.
     """
 
-    def __init__(self, queue_member_str):
+    @classmethod
+    def from_queue(cls, queue: str) -> list[AtQueueMember]:
+        at_queue = io.BytesIO(subprocess.check_output(["at", "-l"]))
+        members = []
+        for member_line in at_queue:
+            member = AtQueueMember.from_queue_line(member_line.decode("UTF-8"))
+            if member.queue == queue:
+                members.append(member)
+        members = sorted(members, key=lambda x: x.dt)
+        for i, member in enumerate(reversed(members)):
+            if i % 2 == 0:
+                member.action = EventType.ON
+            else:
+                member.action = EventType.OFF
+        return members
+
+    @classmethod
+    def from_queue_line(cls, queue_member_str):
         fields = queue_member_str.split()
-        self.id = int(fields[0])
-        self.dt = util.system_time_to_utc(
-            datetime.strptime(" ".join(fields[1:6]), "%a %b %d %H:%M:%S %Y")
+        return cls(
+            int(fields[0]),
+            util.system_time_to_utc(
+                datetime.strptime(" ".join(fields[1:6]), "%a %b %d %H:%M:%S %Y")
+            ),
+            fields[6],
+            None,
         )
-        self.queue = fields[6]
+
+    def __init__(self, id, dt, queue, action):
+        self.id = id
+        self.dt = dt
+        self.queue = queue
+        self.action = action
+
+    def is_equivalent(self, other):
+        return (
+            self.dt == other.dt
+            and self.queue == other.queue
+            and self.action == other.action
+        )
 
 
 class AtWrapper:
@@ -56,20 +92,6 @@ class AtWrapper:
             systime.year, systime.month, systime.day, systime.hour, systime.minute
         )
 
-    @staticmethod
-    def get_at_queue_members() -> list[AtQueueMember]:
-        """
-        Get all current members of the 'at' daemon queue.
-
-        @return Unsorted and unfiltered list of all members.
-        """
-
-        at_queue = io.BytesIO(subprocess.check_output(["at", "-l"]))
-        queue_list = []
-        for member_line in at_queue:
-            queue_list.append(AtQueueMember(member_line.decode("UTF-8")))
-        return queue_list
-
     @classmethod
     def clear_queue_from(cls, queue: str, dt: datetime):
         """
@@ -83,10 +105,13 @@ class AtWrapper:
         # AtQueueMember timestamp fields are always naive, but the timestamp
         # from util.utc_to_system_time might not be.
         dt = util.utc_to_system_time(dt).replace(tzinfo=None)
-        members = cls.get_at_queue_members()
-        for mem in cls.queue_filter(members, queue):
+        for mem in AtQueueMember.from_queue(queue):
             if mem.dt >= dt:
                 subprocess.call(["atrm", str(mem.id)])
+
+    @classmethod
+    def clear_queue(cls, queue: str):
+        cls.clear_queue_from(queue, datetime.fromtimestamp(0))
 
     @classmethod
     def add_switch_command(
@@ -106,23 +131,6 @@ class AtWrapper:
             dt,
             prog_config["environment"]["switch_queue"],
         )
-
-    @staticmethod
-    def queue_filter(
-        member_list: list[AtQueueMember], queue: str
-    ) -> Generator[AtQueueMember, None, None]:
-        """
-        Filter a list of 'at' daemmon members by queue.
-
-        @param member_list List of 'at' daemon members.
-        @param queue Character representing 'at' queue that should be retained.
-
-        @return Generator of members in the specified queue.
-        """
-
-        for member in member_list:
-            if member.queue == queue:
-                yield member
 
     @staticmethod
     def remove_member(member: AtQueueMember):
@@ -147,7 +155,12 @@ class AtWrapper:
         """
 
         wrapped_cmd = f'echo "{command}" | at -q {queue} -t {cls.datetime_to_at(dt)}'
-        subprocess.call(wrapped_cmd, shell=True)
+        subprocess.call(
+            wrapped_cmd,
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
 
 
 class CronWrapper:
@@ -186,16 +199,19 @@ class CronWrapper:
             )
 
             # Run at 21:30 every day
-            sys_21_30 = util.get_21_30_market_as_sys
+            sys_21_30 = util.get_21_30_market_as_sys()
             fetch_job.setall(f"{sys_21_30.minute} {sys_21_30.hour} * * *")
 
 
-def script_pidfile(filename=PIDFILE_NAME) -> pid.PidFile:
+def script_pidfile(filepath=None) -> pid.PidFile:
     """
     Create a pidfile lock for 'at' queue access.
 
     @return Pidfile handle.
     """
 
-    uid = subprocess.check_output(["id", "-u"]).decode("UTF-8").strip()
-    return pid.PidFile(f"/var/run/user/{uid}/{filename}.lock")
+    if filepath is None:
+        uid = subprocess.check_output(["id", "-u"]).decode("UTF-8").strip()
+        return pid.PidFile(f"/var/run/user/{uid}/{PIDFILE_NAME}.lock")
+    else:
+        return pid.PidFile(filepath)

@@ -6,6 +6,7 @@ Classes:
     AtCmdWrapper
     ScheduleBuilder
 """
+from __future__ import annotations
 
 import datetime
 from typing import TypeVar
@@ -34,8 +35,35 @@ class ScheduleBuilder:
     ON_EVENT = 0
     OFF_EVENT = 1
 
-    def __init__(self):
-        self.sched = []
+    @classmethod
+    def retrieve_sched(cls, prog_config):
+        sched = []
+        for i, event in enumerate(
+            sorted(
+                list(
+                    manage.AtQueueMember.from_queue(
+                        prog_config["environment"]["switch_queue"]
+                    )
+                ),
+                key=lambda x: x.dt,
+            )
+        ):
+            if i % 2 == 0:
+                # This is an ON event
+                sched.append((cls.ON_EVENT, event.dt))
+            else:
+                # This is an OFF event
+                sched.append((cls.OFF_EVENT, event.dt))
+        if len(sched) > 0 and sched[0][0] == cls.OFF_EVENT:
+            # First event is off, therefore we are currently on. Don't touch
+            # the off event.
+            sched.pop(0)
+        return cls(sched)
+
+    def __init__(
+        self, sched: list[tuple[ScheduleBuilder.SwitchEvent, datetime.datetime]]
+    ):
+        self.sched = sched
 
     def add_heating_slice(self, start_time, num_mins):
         """

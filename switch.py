@@ -33,13 +33,14 @@ def main(args):
         # Reverse the pin state
         pin_state = GPIO.LOW if pin_state == GPIO.HIGH else GPIO.HIGH
 
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(0)
-    GPIO.setup(out_pin, GPIO.OUT)
-    GPIO.output(out_pin, pin_state)
+    if not args._test_dryrun:
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(0)
+        GPIO.setup(out_pin, GPIO.OUT)
+        GPIO.output(out_pin, pin_state)
 
     log.LoggerFactory.get_logger("SWITCH").info(
-        f"Heating switched {args.action[0]} (pin {pin_state})!"
+        f"{'DRYRUN!' if args._test_dryrun else ''}Heating switched {args.action[0]} (pin {pin_state})!"
     )
 
 
@@ -66,6 +67,7 @@ if __name__ == "__main__":
         default=None,
         help=argparse.SUPPRESS,
     )
+    parser.add_argument("--_test_dryrun", action="store_true", help=argparse.SUPPRESS)
     parsed_args = parser.parse_args()
 
     if parsed_args._test_pidfile:

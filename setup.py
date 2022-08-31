@@ -10,6 +10,7 @@ import subprocess
 import argparse
 from typing import Optional, Callable, TypeVar
 import toml
+from pathlib import Path
 
 from src import config, util, manage
 
@@ -267,7 +268,7 @@ def get_user_polarity() -> bool:
     return get_yes_no(pc.prompt())
 
 
-def create_new_conf() -> config.ProgramConfig:
+def create_new_conf(args) -> config.ProgramConfig:
     """
     Create a new ProgramConfig with user input.
 
@@ -297,12 +298,18 @@ def create_new_conf() -> config.ProgramConfig:
         print(PromptCollection("python_cmd")["auto_fail"])
         conf["environment"]["python"] = get_user_python_cmd()
 
-    conf["environment"]["switch_queue"] = "s"
+    conf["environment"]["switch_queue"] = args.queue[0]
     conf["environment"]["script_dir"] = os.getcwd()
     conf["hardware"]["switch_pin"] = get_user_relay_gpio()
     conf["hardware"]["reverse_polarity"] = get_user_polarity()
-    conf["logging"]["fetch_logfile"] = f"{os.getcwd()}/fetch.log"
-    conf["logging"]["switch_logfile"] = f"{os.getcwd()}/switch.log"
+
+    if args.logdir:
+        logdir = Path(args.logdir[0])
+    else:
+        logdir = Path.cwd()
+    print("logdir:", logdir)
+    conf["logging"]["fetch_logfile"] = str(logdir / "fetch.log")
+    conf["logging"]["switch_logfile"] = str(logdir / "switch.log")
 
     # Validate new configuration just to be sure
     conf_check = config.ProgramConfig.check_config(conf)
@@ -446,7 +453,7 @@ def main(args: argparse.Namespace):
         old_switch_queue = conf["environment"]["switch_queue"]
         amend_existing_conf(conf)
     else:
-        conf = create_new_conf()
+        conf = create_new_conf(args)
         old_switch_queue = None
     user_save_file(conf)
 
@@ -465,7 +472,10 @@ def main(args: argparse.Namespace):
     if old_switch_queue is not None:
         with manage.script_pidfile():
             for i, sched_switch in enumerate(
-                at.queue_filter(at.get_at_queue_members(), old_switch_queue)
+                sorted(
+                    list(manage.AtQueueMember.from_queue(old_switch_queue)),
+                    key=lambda x: x.dt,
+                )
             ):
                 at.remove_member(sched_switch)
                 at.add_switch_command(
@@ -481,6 +491,20 @@ if __name__ == "__main__":
         nargs=1,
         default=None,
         help="Configration file path to amend.",
+    )
+    parser.add_argument(
+        "-l",
+        "--logdir",
+        nargs=1,
+        default=None,
+        help="Directory to store logfiles in.",
+    )
+    parser.add_argument(
+        "-q",
+        "--queue",
+        nargs=1,
+        default="s",
+        help="Queue to use for scheduling switch commands.",
     )
     parser.add_argument(
         "--_test_comment",
@@ -500,5 +524,9 @@ if __name__ == "__main__":
         pid_handle = manage.script_pidfile(parsed_args._test_pidfile[0])
     else:
         pid_handle = manage.script_pidfile()
+    if parsed_args.logdir and not Path(parsed_args.logdir[0]):
+        util.exit_critical_bare(
+            f"Passed logfile directory ({parsed_args.logdir[0]}) is not a directory!"
+        )
     with pid_handle:
         main(parsed_args)

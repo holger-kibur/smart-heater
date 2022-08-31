@@ -8,7 +8,6 @@ Classes:
 """
 from __future__ import annotations
 
-from datetime import datetime
 import os
 from typing import Union, Optional
 import toml
@@ -219,8 +218,9 @@ class ProgramConfig:
 
         return recurse(self.config_tree, other.config_tree)
 
-    def get_heating_minutes(self, date: datetime) -> int:
+    def get_heating_minutes(self, weekday: int) -> int:
         """
+        TODO: update doc
         Get configured heating minutes for the weekday of the passed datetime.
 
         @param date A time within the query weekday.
@@ -228,7 +228,7 @@ class ProgramConfig:
         @return Number of heating minutes.
         """
 
-        return list(self["heating-schedule"].values())[date.weekday()]
+        return list(self["heating-schedule"].values())[weekday]
 
     def gen_fetch_command(self) -> str:
         """

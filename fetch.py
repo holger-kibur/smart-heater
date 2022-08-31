@@ -6,17 +6,13 @@ This is meant to be ran from the command line.
 """
 
 import argparse
+import toml
 
-from src import log, util, verify_env, config, manage
+from src import log, util, config, manage
 
 
 def main(args):
-    # Verify environment
-    if not args.skipenvcheck:
-        verify_result = verify_env.verify_environment()
-        if not verify_result[0]:
-            util.exit_critical_bare(f"Environment not suitable: {verify_result[1]}")
-
+    # TODO: Rethink environment check
     # Get program configuration
     prog_config = config.ProgramConfig.from_file(args.configfile[0])
     if prog_config is None:
@@ -32,8 +28,12 @@ def main(args):
     from src import fetch
 
     # Execute main fetch logic
-    if args._test_pricedata:
-        fetch.do_fetch(prog_config, test_pricedata=args._test_pricedata[0])
+    if args._test_datafile:
+        try:
+            pricedata = toml.load(args._test_datafile[0])
+        except FileNotFoundError:
+            util.exit_critical_bare("Couldn't find test price data!")
+        fetch.do_fetch(prog_config, test_pricedata=pricedata)
     else:
         fetch.do_fetch(prog_config)
 

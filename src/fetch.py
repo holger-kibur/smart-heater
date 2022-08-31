@@ -7,13 +7,59 @@ Functions:
     parse_day_average
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Optional
 import json
 import requests
 
 from . import log, schedule as cron, util
 
 logger = log.LoggerFactory.get_logger("FETCH")
+
+
+class PriceData:
+    @classmethod
+    def from_nordpool(cls, tree, region_code):
+        inst = cls()
+        for row in tree:
+            for column in row["Columns"]:
+                if column["Name"].lower() != region_code.lower():
+                    continue
+                if not row["IsExtraRow"]:
+                    start_time = datetime.fromisoformat(row["StartTime"])
+                    price = float(column["Value"].replace(",", ".").replace(" ", ""))
+                    inst.add_price_item(start_time, price)
+        inst.finalize()
+        return inst
+
+    @classmethod
+    def from_test_data(cls, tree):
+        if "data" not in tree.keys():
+            util.exit_critical_bare("Price data file doesn't have the 'data' key!")
+        if "weekday" not in tree.keys():
+            util.exit_critical_bare("Price data file doesn't have the 'weekday' key!")
+        inst = cls()
+        start_time = util.next_market_day_start()
+        for test_price in tree["data"]:
+            inst.add_price_item(start_time, test_price)
+            start_time += timedelta(hours=1)
+        inst.finalize()
+        inst.weekday = tree["weekday"]  # Override from test data
+        return inst
+
+    def __init__(self):
+        self.data: list[tuple[datetime, float]] = []
+        self.weekday: Optional[int] = None
+
+    def add_price_item(self, start_time: datetime, price: float):
+        self.data.append((start_time, price))
+
+    def finalize(self):
+        self.data = sorted(self.data, key=lambda x: x[0])
+        self.weekday = self.data[0][0].weekday()
+
+    def pop_cheapest(self):
+        return self.data.pop(0)
 
 
 def fetch_info(req_url) -> dict:
@@ -42,62 +88,28 @@ def fetch_info(req_url) -> dict:
     return rows
 
 
-def parse_hourly_prices(country, info_rows) -> list:
-    """
-    Parse the hourly prices for the given country from info_rows.
-
-    This method returns a list of price-hour dicts sorted in ascending order by price.
-    """
-
-    price_info = []
-
-    for row in info_rows:
-        for column in row["Columns"]:
-            if column["Name"] == country:
-                if not row["IsExtraRow"]:
-                    print(column["Value"], row["StartTime"])
-                    price_info.append(
-                        {
-                            "start_time": datetime.fromisoformat(row["StartTime"]),
-                            "price": float(
-                                column["Value"].replace(",", ".").replace(" ", "")
-                            ),
-                        }
-                    )
-
-    # Fail the script if the prices are not for tomorrow
-    if price_info[0]["start_time"] < util.next_market_day_start():
-        util.exit_critical(
-            logger, "Fetched today's price information, not tomorrows as expected!"
-        )
-
-    return sorted(price_info, key=lambda x: x["price"])
-
-
 def do_fetch(prog_config, test_pricedata=None):
     """
     Do the fetch program logic using the give program configuration.
     """
 
-    # Fetch price information from URL
-    if prog_config["fetch"]["url"] is None:
-        util.exit_critical(logger, "No fetch URL provided in configuration!")
-    table_rows = fetch_info(prog_config["fetch"]["url"])
-
-    # Parse hourly prices
-    pricelist = (
-        parse_hourly_prices(prog_config["fetch"]["region_code"], table_rows)
-        if not test_pricedata
-        else test_pricedata
-    )
+    if not test_pricedata:
+        # Fetch price information from URL
+        if prog_config["fetch"]["url"] is None:
+            util.exit_critical(logger, "No fetch URL provided in configuration!")
+        table_rows = fetch_info(prog_config["fetch"]["url"])
+        pricedata = PriceData.from_nordpool(
+            table_rows, prog_config["fetch"]["region_code"]
+        )
+    else:
+        pricedata = PriceData.from_test_data(test_pricedata)
 
     # Build schedule from prices
-    sched_builder = cron.ScheduleBuilder()
-    rem_minutes = prog_config.get_heating_minutes(pricelist[0]["start_time"])
-    for price_entry in pricelist:
-        if rem_minutes <= 0:
-            break
-        sched_builder.add_heating_slice(price_entry["start_time"], min(rem_minutes, 60))
+    sched_builder = cron.ScheduleBuilder.retrieve_sched(prog_config)
+    rem_minutes = prog_config.get_heating_minutes(pricedata.weekday)
+    while rem_minutes > 0:
+        start_time, _ = pricedata.pop_cheapest()
+        sched_builder.add_heating_slice(start_time, min(rem_minutes, 60))
         rem_minutes -= 60
 
     # Upload schedule to crontab
