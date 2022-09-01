@@ -23,7 +23,6 @@ def do_switch(config, action):
 
 
 def main(args):
-    print("SWITCH MAIN RUN")
     prog_config = config.ProgramConfig.from_file(args.configfile[0])
     if prog_config is None:
         # Couldn't find configuration file
@@ -32,7 +31,6 @@ def main(args):
     log.LoggerFactory.configure_logger(
         verbose=False, logfile=prog_config["logging"]["switch_logfile"], debug=False
     )
-    print(prog_config["logging"]["switch_logfile"])
 
     if not args._test_dryrun:
         do_switch(prog_config, args.action[0])

@@ -105,7 +105,7 @@ def do_fetch(prog_config, test_pricedata=None):
 
     # Build schedule from prices
     # sched_builder = cron.ScheduleBuilder.retrieve_sched(prog_config)
-    sched_builder = cron.ScheduleBuilder([])
+    sched_builder = cron.ScheduleBuilder.retrieve_sched(prog_config)
     rem_minutes = prog_config.get_heating_minutes(pricedata.weekday)
     while rem_minutes > 0:
         start_time, _ = pricedata.pop_cheapest()

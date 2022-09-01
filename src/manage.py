@@ -155,7 +155,6 @@ class AtWrapper:
         """
 
         wrapped_cmd = f'echo "{command}" | at -q {queue} -t {cls.datetime_to_at(dt)}'
-        print("Add switch - executing:", wrapped_cmd)
         subprocess.call(
             wrapped_cmd,
             shell=True,

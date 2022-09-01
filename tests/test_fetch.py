@@ -17,8 +17,6 @@ def _test_fetch(fix_config, fix_test_queue):
     that there are an even amount of them.
     """
 
-    print("Using queue", fix_test_queue)
-
     fetch = importlib.import_module("src.fetch")
 
     # Configure test so it interferes as little as possible

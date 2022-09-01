@@ -245,13 +245,12 @@ def test_toplevel(
                 "--_test_dryrun",
             ],
             stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
             text=True,
             encoding="UTF-8",
         )
         print_popen(switch_inst)
-        out, error = switch_inst.communicate()
-        print(out)
+        _, error = switch_inst.communicate()
         assert not error
 
     # Ensure logs were printed in correct place by switch
