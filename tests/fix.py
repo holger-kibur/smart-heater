@@ -7,8 +7,9 @@ import subprocess
 import io
 import importlib
 import pytest
+from typing import Generator
 
-from src import log
+from src import log, manage
 
 
 @pytest.fixture
@@ -64,29 +65,11 @@ def fix_config(fix_logging):  # pylint: disable=redefined-outer-name,unused-argu
 
 
 @pytest.fixture
-def fix_empty_at_queue():
-    """
-    Test fixture that provides tests with an empty 'at' command queue. This
-    function also cleans up commmands added to that queue after test
-    completion.
-    """
-
-    at_list = io.BytesIO(subprocess.check_output(["at", "-l"]))
-    queues = {k: False for k in list(string.ascii_letters)}
-    used_queue = None
-    for line in at_list:
-        queues[line.split()[6].decode("UTF-8")] = True
-    for queue, in_use in queues.items():
-        if not in_use:
-            used_queue = queue
-            break
-    else:
-        pytest.fail("No empty at queues to use for tests!")
-
-    yield used_queue
-
-    # Cleanup all commands in used queue
-    at_list_after = io.BytesIO(subprocess.check_output(["at", "-l"]))
-    for line in at_list_after:
-        if line.split()[6].decode("UTF-8") == used_queue:
-            subprocess.call(["atrm", line.split()[0].decode("UTF-8")])
+def fix_test_queue() -> Generator[str, None, None]:
+    TEST_QUEUE = "T"
+    # Preliminary check to make sure the queue is empty
+    if len(manage.AtQueueMember.from_queue(TEST_QUEUE)) > 0:
+        pytest.fail("Test queue 'T' is already in use!")
+    yield TEST_QUEUE
+    # Clear queue from all the things we might have put into it
+    manage.AtWrapper.clear_queue(TEST_QUEUE)

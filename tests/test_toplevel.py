@@ -49,17 +49,6 @@ def fix_test_logdir() -> Generator[str, None, None]:
 
 
 @pytest.fixture
-def fix_test_queue() -> Generator[str, None, None]:
-    TEST_QUEUE = "T"
-    # Preliminary check to make sure the queue is empty
-    if len(manage.AtQueueMember.from_queue(TEST_QUEUE)) > 0:
-        pytest.fail("Test queue 'T' is already in use!")
-    yield TEST_QUEUE
-    # Clear queue from all the things we might have put into it
-    manage.AtWrapper.clear_queue(TEST_QUEUE)
-
-
-@pytest.fixture
 def fix_test_jobcomment() -> Generator[str, None, None]:
     TEST_JOBCOMMENT = "SMART_HEATER_TEST_JOB"
     yield TEST_JOBCOMMENT
@@ -79,14 +68,11 @@ def conv_to_queue_members(
 ) -> Generator[manage.AtQueueMember, None, None]:
     for event in event_list:
         event_market_time = util.next_market_day_start() + timedelta(
-            hours=int(event[1]), minutes=int(event[1] * 100)
-        )
-        event_system_time = util.utc_to_system_time(
-            util.market_time_to_utc(event_market_time)
+            hours=int(event[1]), minutes=int(event[1] * 100) % 100
         )
         yield manage.AtQueueMember(
             0,  # Id doesn't matter in this case
-            event_system_time,
+            util.market_time_to_utc(event_market_time).replace(tzinfo=None),
             queue,
             manage.EventType.ON if event[0] == 0 else manage.EventType.OFF,
         )
@@ -207,8 +193,8 @@ def test_toplevel(
     for test_day in TEST_DAYS:
         # Run crontab fetch command
         fetch_inst = subprocess.Popen(
-            [
-                fetch_job.command,
+            fetch_job.command.split(" ")
+            + [
                 "-v",
                 "--_test_pidfile",
                 fix_test_fpaths["pidfile"],
@@ -218,12 +204,10 @@ def test_toplevel(
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
             text=True,
-            shell=True,
             encoding="UTF-8",
         )
         print_popen(fetch_inst)
-        out, error = fetch_inst.communicate()
-        print(out)
+        _, error = fetch_inst.communicate()
         assert not error
 
         # Ensure correct output to test queue
@@ -244,7 +228,7 @@ def test_toplevel(
                     ["at", "-c", str(member.id)], text=True, encoding="UTF-8"
                 )
             )
-            switch_commands.append(longout.readlines()[-2])
+            switch_commands.append(longout.readlines()[-2].strip())
 
         # Clear queue
         manage.AtWrapper.clear_queue(fix_test_queue)
@@ -254,19 +238,20 @@ def test_toplevel(
 
     for switch_command in switch_commands:
         switch_inst = subprocess.Popen(
-            [
-                switch_command,
+            switch_command.split(" ")
+            + [
                 "--_test_pidfile",
                 fix_test_fpaths["pidfile"],
                 "--_test_dryrun",
             ],
             stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
             text=True,
-            shell=True,
             encoding="UTF-8",
         )
         print_popen(switch_inst)
-        _, error = switch_inst.communicate()
+        out, error = switch_inst.communicate()
+        print(out)
         assert not error
 
     # Ensure logs were printed in correct place by switch

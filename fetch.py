@@ -76,6 +76,7 @@ if __name__ == "__main__":
         help=argparse.SUPPRESS,
     )
     parsed_args = parser.parse_args()
+    print("datafile:", parsed_args)
 
     if parsed_args._test_pidfile:
         pid_handle = manage.script_pidfile(parsed_args._test_pidfile[0])

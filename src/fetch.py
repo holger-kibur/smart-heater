@@ -55,7 +55,7 @@ class PriceData:
         self.data.append((start_time, price))
 
     def finalize(self):
-        self.data = sorted(self.data, key=lambda x: x[0])
+        self.data = sorted(self.data, key=lambda x: x[1])
         self.weekday = self.data[0][0].weekday()
 
     def pop_cheapest(self):
@@ -92,7 +92,6 @@ def do_fetch(prog_config, test_pricedata=None):
     """
     Do the fetch program logic using the give program configuration.
     """
-
     if not test_pricedata:
         # Fetch price information from URL
         if prog_config["fetch"]["url"] is None:
@@ -105,7 +104,8 @@ def do_fetch(prog_config, test_pricedata=None):
         pricedata = PriceData.from_test_data(test_pricedata)
 
     # Build schedule from prices
-    sched_builder = cron.ScheduleBuilder.retrieve_sched(prog_config)
+    # sched_builder = cron.ScheduleBuilder.retrieve_sched(prog_config)
+    sched_builder = cron.ScheduleBuilder([])
     rem_minutes = prog_config.get_heating_minutes(pricedata.weekday)
     while rem_minutes > 0:
         start_time, _ = pricedata.pop_cheapest()

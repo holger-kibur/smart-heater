@@ -15,6 +15,9 @@ from . import log, util, manage
 
 logger = log.LoggerFactory.get_logger("SCHEDULE")
 
+ON = manage.EventType.ON
+OFF = manage.EventType.OFF
+
 
 class ScheduleBuilder:
     """
@@ -32,8 +35,6 @@ class ScheduleBuilder:
     """
 
     SwitchEvent = TypeVar("SwitchEvent")
-    ON_EVENT = 0
-    OFF_EVENT = 1
 
     @classmethod
     def retrieve_sched(cls, prog_config):
@@ -50,11 +51,11 @@ class ScheduleBuilder:
         ):
             if i % 2 == 0:
                 # This is an ON event
-                sched.append((cls.ON_EVENT, event.dt))
+                sched.append((ON, event.dt))
             else:
                 # This is an OFF event
-                sched.append((cls.OFF_EVENT, event.dt))
-        if len(sched) > 0 and sched[0][0] == cls.OFF_EVENT:
+                sched.append((OFF, event.dt))
+        if len(sched) > 0 and sched[0][0] == OFF:
             # First event is off, therefore we are currently on. Don't touch
             # the off event.
             sched.pop(0)
@@ -84,9 +85,9 @@ class ScheduleBuilder:
 
         for i, (event_type, event_time) in enumerate(self.sched):
             if util.hours_contiguous(start_time, event_time):
-                if event_type == self.ON_EVENT:
+                if event_type == ON:
                     self.sched[i] = (
-                        self.ON_EVENT,
+                        ON,
                         self.sched[i][1] - datetime.timedelta(minutes=num_mins),
                     )
                     break
@@ -94,9 +95,9 @@ class ScheduleBuilder:
                 # then we have a duplicate entry.
                 raise Exception("Duplicate entry in scheduler: slice comes before OFF!")
             if util.hours_contiguous(event_time, util.plus_hour(start_time)):
-                if event_type == self.OFF_EVENT:
+                if event_type == OFF:
                     self.sched[i] = (
-                        self.OFF_EVENT,
+                        OFF,
                         self.sched[i][1] + datetime.timedelta(minutes=num_mins),
                     )
                     break
@@ -104,10 +105,8 @@ class ScheduleBuilder:
                 # we also have a duplicate entry.
                 raise Exception("Duplicate entry in scheduler: slice comes after ON!")
         else:
-            self.sched.append((self.ON_EVENT, start_time))
-            self.sched.append(
-                (self.OFF_EVENT, start_time + datetime.timedelta(minutes=num_mins))
-            )
+            self.sched.append((ON, start_time))
+            self.sched.append((OFF, start_time + datetime.timedelta(minutes=num_mins)))
 
     def display_schedule(self):
         """
@@ -123,7 +122,7 @@ class ScheduleBuilder:
             sys_time = util.utc_to_system_time(utc_time)
             logger.info(
                 "|  %s  | %s | %s | %s |",
-                "ON " if event_type == self.ON_EVENT else "OFF",
+                "ON " if event_type == ON else "OFF",
                 util.pretty_datetime(event_time),
                 util.pretty_datetime(utc_time),
                 util.pretty_datetime(sys_time),
@@ -165,9 +164,9 @@ class ScheduleBuilder:
         self.display_schedule()
 
         # Sanity checks for safety
-        if self.sched[0][0] != self.ON_EVENT:
+        if self.sched[0][0] != ON:
             raise Exception("Schedule doesn't start with ON event!")
-        if self.sched[-1][0] != self.OFF_EVENT:
+        if self.sched[-1][0] != OFF:
             raise Exception("Schedule doesn't end with OFF event!")
 
         # Clear any switches scheduled for the same day
@@ -179,6 +178,6 @@ class ScheduleBuilder:
         for (event_type, event_time) in self.sched:
             manage.AtWrapper.add_switch_command(
                 prog_config,
-                "ON" if event_type == self.ON_EVENT else "OFF",
+                "ON" if event_type == ON else "OFF",
                 util.market_time_to_utc(event_time),
             )

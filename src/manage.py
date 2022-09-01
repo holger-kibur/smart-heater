@@ -39,9 +39,9 @@ class AtQueueMember:
         members = sorted(members, key=lambda x: x.dt)
         for i, member in enumerate(reversed(members)):
             if i % 2 == 0:
-                member.action = EventType.ON
-            else:
                 member.action = EventType.OFF
+            else:
+                member.action = EventType.ON
         return members
 
     @classmethod
@@ -155,6 +155,7 @@ class AtWrapper:
         """
 
         wrapped_cmd = f'echo "{command}" | at -q {queue} -t {cls.datetime_to_at(dt)}'
+        print("Add switch - executing:", wrapped_cmd)
         subprocess.call(
             wrapped_cmd,
             shell=True,
