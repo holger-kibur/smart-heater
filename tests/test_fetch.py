@@ -7,7 +7,7 @@ import io
 import importlib
 
 
-def _test_fetch(fix_config, fix_test_queue):
+def test_fetch(fix_config, fix_test_queue):
     """
     Integration test of the fetch script.
 
