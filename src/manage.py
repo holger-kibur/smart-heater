@@ -11,10 +11,12 @@ from datetime import datetime
 import pid
 import crontab
 
-from src import util, config
+from src import util, config, log
 
 FETCH_CRON_COMMENT = "smart-heater-fetch"
 PIDFILE_NAME = "smart-heater"
+
+logger = log.LoggerLazyStatic("OS MANAGEMENT")
 
 
 class EventType:
@@ -213,5 +215,4 @@ def script_pidfile(filepath=None) -> pid.PidFile:
     if filepath is None:
         uid = subprocess.check_output(["id", "-u"]).decode("UTF-8").strip()
         return pid.PidFile(f"/var/run/user/{uid}/{PIDFILE_NAME}.lock")
-    else:
-        return pid.PidFile(filepath)
+    return pid.PidFile(filepath)

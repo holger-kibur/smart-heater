@@ -1,8 +1,5 @@
 Convert all datetime conversions to be done through timezone-aware operations.
 
-Refactor logging to be lazy-global-like, so importing modules isn't dependent
-on logger configuration state.
-
 Rethink and refactor environment verification. Maybe not needed on every
 script?
 
@@ -13,3 +10,5 @@ generate documentation.
 Write tests for scheduling, validate that it works as indended.
 
 Clean up toplevel test.
+
+Maybe rewrite online fetch test?

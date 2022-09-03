@@ -12,7 +12,7 @@ import os
 from typing import Union, Optional
 import toml
 
-from . import util
+from . import util, log
 
 ACCEPTABLE_REGION_NAMES = [
     "SYS",
@@ -71,6 +71,8 @@ CONFIG_REQ_KEYS = {
 }
 
 CONFIG_FOLDER = f"/home/{os.getenv('USER')}/.config/smart-heater/"
+
+logger = log.LoggerLazyStatic("CONFIG")
 
 
 class ProgramConfig:
@@ -176,14 +178,14 @@ class ProgramConfig:
         try:
             from_file: dict = toml.load(filepath)
         except FileNotFoundError:
-            util.exit_critical_bare("Couldm't find configuration file!")
+            util.exit_critical(logger, "Couldn't find configuration file!")
 
         return cls(from_file, filepath)
 
     def __init__(self, config_tree, source_file):
         check_res = self.check_config(config_tree)
         if not check_res[0]:
-            util.exit_critical_bare(check_res[1])
+            util.exit_critical(logger, check_res[1])
 
         self.config_tree = config_tree
         self.source_file = source_file

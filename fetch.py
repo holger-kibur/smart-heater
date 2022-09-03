@@ -8,7 +8,7 @@ This is meant to be ran from the command line.
 import argparse
 import toml
 
-from src import log, util, config, manage
+from src import log, util, config, manage, fetch
 
 
 def main(args):
@@ -23,9 +23,6 @@ def main(args):
     log.LoggerFactory.configure_logger(
         args.verbose, prog_config["logging"]["fetch_logfile"], args.debug
     )
-
-    # Import rest of modules
-    from src import fetch
 
     # Execute main fetch logic
     if args._test_datafile:

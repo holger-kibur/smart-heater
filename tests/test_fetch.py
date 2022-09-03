@@ -5,6 +5,9 @@ Pytest container module for the test_fetch function.
 import subprocess
 import io
 import importlib
+import pytest
+
+import requests
 
 
 def test_fetch(fix_config, fix_test_queue):
@@ -22,7 +25,10 @@ def test_fetch(fix_config, fix_test_queue):
     # Configure test so it interferes as little as possible
     fix_config["environment"]["at_queue"] = fix_test_queue
 
-    fetch.do_fetch(prog_config=fix_config)
+    try:
+        fetch.do_fetch(prog_config=fix_config)
+    except requests.exceptions.ConnectionError:
+        pytest.skip("Can't run online fetch test without internet connection!")
 
     # Inspect at queue to see if commands were entered correctly
     at_queue = io.BytesIO(subprocess.check_output(["at", "-l"]))

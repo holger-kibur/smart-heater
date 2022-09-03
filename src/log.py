@@ -8,6 +8,45 @@ import sys
 from . import util
 
 
+class LoggerLazyStatic:
+    @staticmethod
+    def inst_once(func):
+        def wrapper(self, *args, **kwargs):
+            if self.inner is None:
+                self.inner = LoggerFactory.get_logger(
+                    *self.inst_args, **self.inst_kwargs
+                )
+            func(self, self.inner, *args, **kwargs)
+
+        return wrapper
+
+    def __init__(self, *args, **kwargs):
+        self.inst_args = args
+        self.inst_kwargs = kwargs
+        self.inner = None
+
+    @inst_once
+    def debug(self, inst, *args, **kwargs):
+        inst.debug(*args, **kwargs)
+
+    @inst_once
+    def info(self, inst, *args, **kwargs):
+        print(inst)
+        inst.info(*args, **kwargs)
+
+    @inst_once
+    def warning(self, inst, *args, **kwargs):
+        inst.warning(*args, **kwargs)
+
+    @inst_once
+    def error(self, inst, *args, **kwargs):
+        inst.error(*args, **kwargs)
+
+    @inst_once
+    def critical(self, inst, *args, **kwargs):
+        inst.critical(*args, **kwargs)
+
+
 class LoggerFactory:
     """
     Factory class for logger instances that will be each be configured

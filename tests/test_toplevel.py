@@ -202,7 +202,7 @@ def test_toplevel(
                 day_to_path(test_day),
             ],
             stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
             text=True,
             encoding="UTF-8",
         )

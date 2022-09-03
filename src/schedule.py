@@ -13,7 +13,7 @@ from typing import TypeVar
 
 from . import log, util, manage
 
-logger = log.LoggerFactory.get_logger("SCHEDULE")
+logger = log.LoggerLazyStatic("SCHEDULE")
 
 ON = manage.EventType.ON
 OFF = manage.EventType.OFF

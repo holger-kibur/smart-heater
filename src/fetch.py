@@ -14,7 +14,7 @@ import requests
 
 from . import log, schedule as cron, util
 
-logger = log.LoggerFactory.get_logger("FETCH")
+logger = log.LoggerLazyStatic("FETCH")
 
 
 class PriceData:
