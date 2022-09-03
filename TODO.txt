@@ -12,3 +12,5 @@ Write tests for scheduling, validate that it works as indended.
 Clean up toplevel test.
 
 Maybe rewrite online fetch test?
+
+Add price limit feature and configuration option, integrate it into setup script.
