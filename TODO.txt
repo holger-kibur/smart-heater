@@ -7,10 +7,6 @@ Check existing docstrings for validity and create new docstrings, type
 annotations for new functions. Make it work with mkdocs and figure out how to
 generate documentation.
 
-Write tests for scheduling, validate that it works as indended.
-
-Clean up toplevel test.
-
-Maybe rewrite online fetch test?
-
 Add price limit feature and configuration option, integrate it into setup script.
+
+Fix unknown at-queue leak from tests. Where is it? No idea.

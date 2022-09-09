@@ -307,7 +307,6 @@ def create_new_conf(args) -> config.ProgramConfig:
         logdir = Path(args.logdir[0])
     else:
         logdir = Path.cwd()
-    print("logdir:", logdir)
     conf["logging"]["fetch_logfile"] = str(logdir / "fetch.log")
     conf["logging"]["switch_logfile"] = str(logdir / "switch.log")
 

@@ -67,46 +67,43 @@ class ScheduleBuilder:
         self.sched = sched
 
     def add_heating_slice(self, start_time, num_mins):
-        """
-        Add some number of minutes of heating within the hour starting at
-        start_time to the schedule.
+        self.sched.append((ON, start_time))
+        self.sched.append((OFF, start_time + datetime.timedelta(minutes=num_mins)))
+        self.sort_schedule()
+        self.clear_redundant_events()
+        self.coalesce_fragments()
 
-        This function upholds the condition of strict on/off event interleaving.
-        This means that after each insertion, there will be no such case that
-        the same event type can occur twice in a row chronologically.
+    def sort_schedule(self):
+        self.sched = sorted(self.sched, key=lambda x: x[1])
 
-        The events in the schedule are not necessarily in chronological order,
-        but they can be sorted using the standard library function, due to the
-        strict interleaving condition.
+    def clear_redundant_events(self):
+        for i in reversed(range(len(self.sched) - 1)):
+            if self.sched[i][1] == self.sched[i + 1][1]:
+                self.sched.pop(i)
+                self.sched.pop(i)
 
-        It's important that there be only one non-60 minute time-slice, and that
-        it be the last one to be added.
-        """
-
-        for i, (event_type, event_time) in enumerate(self.sched):
-            if util.hours_contiguous(start_time, event_time):
-                if event_type == ON:
-                    self.sched[i] = (
-                        ON,
-                        self.sched[i][1] - datetime.timedelta(minutes=num_mins),
-                    )
-                    break
-                # If this time slice comes directly before an OFF event,
-                # then we have a duplicate entry.
-                raise Exception("Duplicate entry in scheduler: slice comes before OFF!")
-            if util.hours_contiguous(event_time, util.plus_hour(start_time)):
-                if event_type == OFF:
-                    self.sched[i] = (
+    def coalesce_fragments(self):
+        for i in range(len(self.sched))[::-1][1::2]:
+            this_on = self.sched[i][1]
+            this_off = self.sched[i + 1][1]
+            if util.same_hour(this_on, this_off):
+                # This is a fragment
+                if i > 0 and util.same_hour(self.sched[i - 1][1], this_on):
+                    self.sched[i - 1] = (
                         OFF,
-                        self.sched[i][1] + datetime.timedelta(minutes=num_mins),
+                        self.sched[i - 1][1] + (this_off - this_on),
                     )
-                    break
-                # If this time slice comes directly after an ON event, then
-                # we also have a duplicate entry.
-                raise Exception("Duplicate entry in scheduler: slice comes after ON!")
-        else:
-            self.sched.append((ON, start_time))
-            self.sched.append((OFF, start_time + datetime.timedelta(minutes=num_mins)))
+                elif len(self.sched) - i > 3 and util.same_hour(
+                    this_off, self.sched[i + 2][1]
+                ):
+                    self.sched[i + 2] = (
+                        ON,
+                        self.sched[i + 2][1] - (this_off - this_on),
+                    )
+                else:
+                    continue
+                self.sched.pop(i)
+                self.sched.pop(i)
 
     def display_schedule(self):
         """
@@ -160,7 +157,7 @@ class ScheduleBuilder:
 
         if len(self.sched) == 0:
             return
-        self.sched = sorted(self.sched, key=lambda x: x[1])
+        self.sort_schedule()
         self.display_schedule()
 
         # Sanity checks for safety
